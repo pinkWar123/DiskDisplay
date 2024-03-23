@@ -50,6 +50,8 @@ class FATDirectory : FATFileManager
         CurrentNode.ImageKey = "folderIcon";
         CurrentNode.SelectedImageKey = "folderIcon";
         if (Children.Count() == 0) return;
+        if (CurrentNode.Text == "")
+            CurrentNode.Text = MainName;
         foreach (var child in Children)
         {
             TreeNode node = new TreeNode(child.MainName);
@@ -59,6 +61,7 @@ class FATDirectory : FATFileManager
             CurrentNode.Nodes.Add(node);
         }
         CurrentItem.SubItems.Add("Folder");
+        CurrentItem.ImageIndex = 0;
         CurrentItem.SubItems.Add(GetSize().ToString());
         CurrentItem.SubItems.Add(Creationdatetime.ToString());
     }

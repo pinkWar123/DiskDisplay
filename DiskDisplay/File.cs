@@ -34,12 +34,15 @@ class FATFile : FATFileManager
         CurrentNode.ImageKey = "fileIcon";
         CurrentNode.SelectedImageKey = "fileIcon";
         CurrentNode.Tag = this;
+        if (CurrentNode.Text == "")
+            CurrentNode.Text = MainName;
+
         CurrentItem.Tag = this;
-        CurrentItem.Text = this.MainName;
+        CurrentItem.ImageIndex = 1;
+        CurrentItem.Text = MainName;
         CurrentItem.SubItems.Add("File");
         CurrentItem.SubItems.Add(GetSize().ToString());
         CurrentItem.SubItems.Add(Creationdatetime.ToString());
-        
 
     }
 }

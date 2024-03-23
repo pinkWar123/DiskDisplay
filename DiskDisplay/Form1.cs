@@ -20,7 +20,6 @@ namespace DiskDisplay
         public Form1()
         {
             InitializeComponent();
-            //InitializeTree();
             var fat32 = new FAT32();
 
             var folders = fat32.ReadFiles(@"\\.\E:");
@@ -28,10 +27,10 @@ namespace DiskDisplay
             folderTree.ImageList = Image1.ImageList;
             foreach(var folder in folders)
             {
-                folder.Populate();
-                folder.PopulateListView(listView1);
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
+                folder.Populate();
+                folder.PopulateListView(listView1);
             }
 
         }
@@ -40,15 +39,11 @@ namespace DiskDisplay
         {
             folderTree.AfterSelect += treeView_AfterSelect;
             listView1.View = View.Details;
-            listView1.Columns.Add("Name");
-            listView1.Columns.Add("Type");
-            listView1.Columns.Add("Size");
-            listView1.Columns.Add("Modified");
-            //listView1.LargeImageList = 
+            listView1.Columns.Add("Name", 200);
+            listView1.Columns.Add("Type", 50);
+            listView1.Columns.Add("Size", 100);
+            listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
-            //listView1.ImageKey = "itemImageKey";
-
-            //webBrowser1.DocumentText = "<html><body><h1>Hello, World!</h1></body></html>";
         }
 
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
