@@ -1,0 +1,25 @@
+﻿# Binaries
+bin/
+obj/
+
+# User-specific files
+*.suo
+*.user
+*.vssettings
+
+# NuGet packages
+packages/
+
+# Temporary files
+*.bak
+*.tmp
+.vs/
+
+# Logs and cache
+*.log
+*.cache
+*.db
+
+# IDE-specific files
+.vscode/
+*.sln.cache
