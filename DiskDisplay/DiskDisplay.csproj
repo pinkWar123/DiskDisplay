@@ -51,8 +51,6 @@
     <Compile Include="File.cs" />
     <Compile Include="FileListView.cs" />
     <Compile Include="FileManager.cs" />
-    <Compile Include="Utilities\FakeFolder.cs" />
-    <Compile Include="FileManagement.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

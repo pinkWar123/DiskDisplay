@@ -45,7 +45,6 @@ class FATDirectory : FATFileManager
     // Methods for UI
     public override void Populate()
     {
-        CurrentItem.Tag = this;
         CurrentItem.Text = MainName;
         CurrentNode.ImageKey = "folderIcon";
         CurrentNode.SelectedImageKey = "folderIcon";
@@ -59,9 +58,21 @@ class FATDirectory : FATFileManager
             child.Populate();
             CurrentNode.Nodes.Add(node);
         }
+        CurrentItem.Tag = this;
         CurrentItem.SubItems.Add("Folder");
         CurrentItem.ImageIndex = 0;
         CurrentItem.SubItems.Add(GetSize().ToString());
         CurrentItem.SubItems.Add(Creationdatetime.ToString());
+    }
+
+    public override void PopulateListView(ListView ListView)
+    {
+        base.PopulateListView(ListView);
+        ListView.Items.Clear();
+        foreach (var child in Children)
+        {
+            //ListViewItem item = new ListViewItem(child.MainName);
+            ListView.Items.Add(child.GetListViewItem());
+        }
     }
 }

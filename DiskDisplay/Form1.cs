@@ -30,7 +30,7 @@ namespace DiskDisplay
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
                 folder.Populate();
-                folder.PopulateListView(listView1);
+                //folder.PopulateListView(listView1);
             }
 
         }
@@ -50,10 +50,10 @@ namespace DiskDisplay
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode selectedNode = e.Node;
-            if(selectedNode.Tag is File)
+            if(selectedNode.Tag is FATFile)
             {
-                File selectedFile = e.Node.Tag as File;
-                MessageBox.Show(selectedFile.GetContent());
+                var selectedFile = e.Node.Tag as FATFile;
+                MessageBox.Show(selectedFile.MainName);
                 //webBrowser1.DocumentText = selectedFile.GetContent();
             }
             // Perform actions based on the selected node
@@ -105,7 +105,18 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                MessageBox.Show(selecteditem.Text);
+                if (selecteditem.Tag is FATFile)
+                {
+                    var selectedFile = selecteditem.Tag as FATFile;
+                    MessageBox.Show(selectedFile.MainName);
+
+                }
+                else if (selecteditem.Tag is FATDirectory)
+                {
+                    var selectedFolder = selecteditem.Tag as FATDirectory;
+                    selectedFolder.PopulateListView(listView1);
+                }
+                //MessageBox.Show(selecteditem.Text);
             }
         }
 
@@ -116,15 +127,15 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if(selecteditem.Tag is File)
+                if(selecteditem.Tag is FATFile)
                 {
-                    File selectedFile = selecteditem.Tag as File;
-                    MessageBox.Show(selectedFile.GetContent());
+                    var selectedFile = selecteditem.Tag as FATFile;
+                    MessageBox.Show(selectedFile.MainName);
 
                 }
-                else if(selecteditem.Tag is Folder)
+                else if(selecteditem.Tag is FATDirectory)
                 {
-                    Folder selectedFolder = selecteditem.Tag as Folder;
+                    var selectedFolder = selecteditem.Tag as FATDirectory;
                     selectedFolder.PopulateListView(listView1);
                 }
                 //MessageBox.Show(selecteditem.Text);
