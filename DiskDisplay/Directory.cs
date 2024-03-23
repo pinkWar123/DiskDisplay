@@ -54,8 +54,7 @@ class FATDirectory : FATFileManager
             CurrentNode.Text = MainName;
         foreach (var child in Children)
         {
-            TreeNode node = new TreeNode(child.MainName);
-
+            TreeNode node = new TreeNode();
             child.SetNode(node);
             child.Populate();
             CurrentNode.Nodes.Add(node);
