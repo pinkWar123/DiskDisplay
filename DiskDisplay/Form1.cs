@@ -44,6 +44,7 @@ namespace DiskDisplay
             listView1.Columns.Add("Size", 100);
             listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
+            
         }
 
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
