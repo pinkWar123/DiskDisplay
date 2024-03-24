@@ -4,6 +4,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using DiskDisplay;
+using System.Collections;
 
 class FATDirectory : FATFileManager
 {
@@ -45,9 +47,10 @@ class FATDirectory : FATFileManager
     // Methods for UI
     public override void Populate()
     {
-        CurrentItem.Text = MainName;
         CurrentNode.ImageKey = "folderIcon";
         CurrentNode.SelectedImageKey = "folderIcon";
+        CurrentNode.Tag = this;
+
         if (Children.Count() == 0) return;
         if (CurrentNode.Text == "")
             CurrentNode.Text = MainName;
@@ -58,6 +61,7 @@ class FATDirectory : FATFileManager
             child.Populate();
             CurrentNode.Nodes.Add(node);
         }
+        CurrentItem.Text = MainName;
         CurrentItem.Tag = this;
         CurrentItem.SubItems.Add("Folder");
         CurrentItem.ImageIndex = 0;
@@ -65,14 +69,27 @@ class FATDirectory : FATFileManager
         CurrentItem.SubItems.Add(Creationdatetime.ToString());
     }
 
-    public override void PopulateListView(ListView ListView)
+    public override void PopulateListView(ref ListView ListView)
     {
-        base.PopulateListView(ListView);
-        ListView.Items.Clear();
-        foreach (var child in Children)
+        base.PopulateListView(ref ListView);
+        if(FileListView.IsLastDirectory())
         {
-            //ListViewItem item = new ListViewItem(child.MainName);
-            ListView.Items.Add(child.GetListViewItem());
+            ++FileListView.CurrentHistoryIndex;
+            Console.Write("a");
+            FileListView.History.Add(this);
+        } else
+        {
+            if(this == FileListView.History[FileListView.CurrentHistoryIndex + 1])
+            {
+                ++FileListView.CurrentHistoryIndex;
+            } else
+            {
+                int startIndex = FileListView.CurrentHistoryIndex + 1;
+                int count = FileListView.History.Count - startIndex;
+                FileListView.History.RemoveRange(startIndex, count);
+                FileListView.History.Add(this);
+            }
         }
+        //FileListView.RenderListView(ref ListView);
     }
 }

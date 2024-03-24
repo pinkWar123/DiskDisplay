@@ -23,7 +23,7 @@ class FileManager
     // Methods for UI
     public virtual void Populate() { }
 
-    public virtual void PopulateListView(ListView ListView) { }
+    public virtual void PopulateListView(ref ListView ListView) { }
 
     public void SetNode(TreeNode node)
     {

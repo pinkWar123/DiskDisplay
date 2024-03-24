@@ -11,28 +11,32 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Net.WebRequestMethods;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 
 namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        
+
+        private int index = 0;
+        private bool IsUserInteraction = false;
         public Form1()
         {
             InitializeComponent();
             var fat32 = new FAT32();
 
             var folders = fat32.ReadFiles(@"\\.\E:");
+            var RootFolder = new FATDirectory();
+            RootFolder.Children = folders;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
+            RootFolder.Populate();
             foreach(var folder in folders)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
-                folder.Populate();
-                //folder.PopulateListView(listView1);
             }
-
+            FileListView.History.Add(RootFolder);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -50,9 +54,9 @@ namespace DiskDisplay
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode selectedNode = e.Node;
-            if(selectedNode.Tag is FATFile)
+            if(selectedNode.Tag != null)
             {
-                var selectedFile = e.Node.Tag as FATFile;
+                var selectedFile = e.Node.Tag as FATFileManager;
                 MessageBox.Show(selectedFile.MainName);
                 //webBrowser1.DocumentText = selectedFile.GetContent();
             }
@@ -67,7 +71,6 @@ namespace DiskDisplay
             {
                 if(fbd.ShowDialog()==DialogResult.OK)
                 {
-                    //webBrowser1.Url = new Uri(fbd.SelectedPath);
                     txtPath.Text = fbd.SelectedPath;
                 }
             }
@@ -75,30 +78,38 @@ namespace DiskDisplay
 
         private void btnBack_Click(object sender, EventArgs e)
         {
-            //if (webBrowser1.CanGoBack)
-            //    webBrowser1.GoBack();
+            //Console.WriteLine(++index);
+            if (!FileListView.IsFirstDirectory())
+            {
+                IsUserInteraction = true;
+                FileListView.CurrentHistoryIndex--;
+                FileListView.RenderListView(ref listView1);
+                IsUserInteraction = false;
+
+            }
         }
 
         private void btnForward_Click(object sender, EventArgs e)
         {
-            //if (webBrowser1.CanGoForward)
-               // webBrowser1.GoForward();
-        }
-
-        private void listView1_MouseClick(object sender, MouseEventArgs e)
-        {
-            for (int i = 0; i < listView1.Items.Count; i++)
+            if (!FileListView.IsLastDirectory())
             {
-                var rectangle = listView1.GetItemRect(i);
-                if (rectangle.Contains(e.Location))
-                {
-                    MessageBox.Show("Item " + i);
-                    return;
-                }
+                IsUserInteraction = true;
+                FileListView.CurrentHistoryIndex++;
+                FileListView.RenderListView(ref listView1);
+                IsUserInteraction = false;
+
             }
         }
 
-        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        
+
+
+        private void txtPath_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void listView1_SelectedIndexChanged_2(object sender, EventArgs e)
         {
             ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
             if (selecteditem != null)
@@ -113,38 +124,38 @@ namespace DiskDisplay
                 }
                 else if (selecteditem.Tag is FATDirectory)
                 {
+                    if(IsUserInteraction) return;
                     var selectedFolder = selecteditem.Tag as FATDirectory;
-                    selectedFolder.PopulateListView(listView1);
+                    if (FileListView.IsLastDirectory())
+                    {
+                        ++FileListView.CurrentHistoryIndex;
+                        FileListView.History.Add(selectedFolder);
+                    }
+                    else
+                    {
+                        if (selectedFolder == FileListView.History[FileListView.CurrentHistoryIndex + 1])
+                        {
+                            Console.WriteLine("Here1");
+
+                            ++FileListView.CurrentHistoryIndex;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Here");
+                            int startIndex = FileListView.CurrentHistoryIndex + 1;
+                            int count = FileListView.History.Count - startIndex;
+                            FileListView.History.RemoveRange(startIndex, count);
+                            FileListView.History.Add(selectedFolder);
+                            ++FileListView.CurrentHistoryIndex;
+                        }
+                    }
+                    FileListView.RenderListView(ref listView1);
+                    
                 }
-                //MessageBox.Show(selecteditem.Text);
+
             }
         }
 
-        private void listView1_SelectedIndexChanged_1(object sender, EventArgs e)
-        {
-            ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
-            if (selecteditem != null)
-            {
-                // Your logic here
-                // Do something with the selected item
-                if(selecteditem.Tag is FATFile)
-                {
-                    var selectedFile = selecteditem.Tag as FATFile;
-                    MessageBox.Show(selectedFile.MainName);
-
-                }
-                else if(selecteditem.Tag is FATDirectory)
-                {
-                    var selectedFolder = selecteditem.Tag as FATDirectory;
-                    selectedFolder.PopulateListView(listView1);
-                }
-                //MessageBox.Show(selecteditem.Text);
-            }
-        }
-
-        private void txtPath_TextChanged(object sender, EventArgs e)
-        {
-
-        }
+       
     }
 }
