@@ -53,15 +53,53 @@ namespace DiskDisplay
 
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            TreeNode selectedNode = e.Node;
-            if(selectedNode.Tag != null)
+            TreeNode selecteditem = e.Node;
+            if (selecteditem != null)
             {
-                var selectedFile = e.Node.Tag as FATFileManager;
-                MessageBox.Show(selectedFile.MainName);
-                //webBrowser1.DocumentText = selectedFile.GetContent();
+                // Your logic here
+                // Do something with the selected item
+                if (selecteditem.Tag is FATFile)
+                {
+                    var selectedFile = selecteditem.Tag as FATFile;
+                    MessageBox.Show(selectedFile.MainName);
+
+                }
+                else if (selecteditem.Tag is FATDirectory)
+                {
+                    if (IsUserInteraction) return;
+                    var selectedFolder = selecteditem.Tag as FATDirectory;
+                    if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
+                        folderTree.SelectedNode.BackColor = Color.White;
+                    folderTree.SelectedNode = selectedFolder.GetNode();
+                    folderTree.SelectedNode.BackColor = Color.Yellow;
+                    if (FileListView.IsLastDirectory())
+                    {
+                        ++FileListView.CurrentHistoryIndex;
+                        FileListView.History.Add(selectedFolder);
+                    }
+                    else
+                    {
+                        if (selectedFolder == FileListView.History[FileListView.CurrentHistoryIndex + 1])
+                        {
+                            Console.WriteLine("Here1");
+
+                            ++FileListView.CurrentHistoryIndex;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Here");
+                            int startIndex = FileListView.CurrentHistoryIndex + 1;
+                            int count = FileListView.History.Count - startIndex;
+                            FileListView.History.RemoveRange(startIndex, count);
+                            FileListView.History.Add(selectedFolder);
+                            ++FileListView.CurrentHistoryIndex;
+                        }
+                    }
+                    FileListView.RenderListView(ref listView1);
+
+                }
+
             }
-            // Perform actions based on the selected node
-            //webBrowser1.DocumentText = ("Selected Node: " + selectedNode.Text);
         }
 
         
@@ -126,6 +164,10 @@ namespace DiskDisplay
                 {
                     if(IsUserInteraction) return;
                     var selectedFolder = selecteditem.Tag as FATDirectory;
+                    if(folderTree.SelectedNode != null)
+                        folderTree.SelectedNode.BackColor = Color.White;
+                    folderTree.SelectedNode = selectedFolder.GetNode();
+                    folderTree.SelectedNode.BackColor = Color.Yellow;
                     if (FileListView.IsLastDirectory())
                     {
                         ++FileListView.CurrentHistoryIndex;
