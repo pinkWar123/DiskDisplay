@@ -41,10 +41,9 @@
             // btnBack
             // 
             this.btnBack.Cursor = System.Windows.Forms.Cursors.Default;
-            this.btnBack.Location = new System.Drawing.Point(44, 57);
-            this.btnBack.Margin = new System.Windows.Forms.Padding(4);
+            this.btnBack.Location = new System.Drawing.Point(33, 46);
             this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(100, 28);
+            this.btnBack.Size = new System.Drawing.Size(75, 23);
             this.btnBack.TabIndex = 0;
             this.btnBack.Text = "<<";
             this.btnBack.UseVisualStyleBackColor = true;
@@ -52,10 +51,9 @@
             // 
             // btnForward
             // 
-            this.btnForward.Location = new System.Drawing.Point(152, 57);
-            this.btnForward.Margin = new System.Windows.Forms.Padding(4);
+            this.btnForward.Location = new System.Drawing.Point(114, 46);
             this.btnForward.Name = "btnForward";
-            this.btnForward.Size = new System.Drawing.Size(100, 28);
+            this.btnForward.Size = new System.Drawing.Size(75, 23);
             this.btnForward.TabIndex = 1;
             this.btnForward.Text = ">>";
             this.btnForward.UseVisualStyleBackColor = true;
@@ -63,10 +61,9 @@
             // 
             // btnOpen
             // 
-            this.btnOpen.Location = new System.Drawing.Point(1769, 63);
-            this.btnOpen.Margin = new System.Windows.Forms.Padding(4);
+            this.btnOpen.Location = new System.Drawing.Point(1327, 51);
             this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(100, 28);
+            this.btnOpen.Size = new System.Drawing.Size(75, 23);
             this.btnOpen.TabIndex = 2;
             this.btnOpen.Text = "Open";
             this.btnOpen.UseVisualStyleBackColor = true;
@@ -76,54 +73,51 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(0, 0);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(44, 16);
+            this.label1.Size = new System.Drawing.Size(35, 13);
             this.label1.TabIndex = 3;
             this.label1.Text = "label1";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(289, 63);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label2.Location = new System.Drawing.Point(217, 51);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(37, 16);
+            this.label2.Size = new System.Drawing.Size(32, 13);
             this.label2.TabIndex = 4;
             this.label2.Text = "Path:";
             // 
             // txtPath
             // 
-            this.txtPath.Location = new System.Drawing.Point(361, 63);
-            this.txtPath.Margin = new System.Windows.Forms.Padding(4);
+            this.txtPath.Location = new System.Drawing.Point(271, 51);
             this.txtPath.Name = "txtPath";
-            this.txtPath.Size = new System.Drawing.Size(1340, 22);
+            this.txtPath.Size = new System.Drawing.Size(1006, 20);
             this.txtPath.TabIndex = 5;
             this.txtPath.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
             // folderTree
             // 
-            this.folderTree.Location = new System.Drawing.Point(44, 127);
-            this.folderTree.Margin = new System.Windows.Forms.Padding(4);
+            this.folderTree.Location = new System.Drawing.Point(33, 103);
             this.folderTree.Name = "folderTree";
-            this.folderTree.Size = new System.Drawing.Size(269, 753);
+            this.folderTree.Size = new System.Drawing.Size(203, 613);
             this.folderTree.TabIndex = 7;
             // 
             // listView1
             // 
+            this.listView1.Activation = System.Windows.Forms.ItemActivation.OneClick;
             this.listView1.HideSelection = false;
-            this.listView1.Location = new System.Drawing.Point(400, 158);
+            this.listView1.Location = new System.Drawing.Point(314, 103);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(929, 722);
+            this.listView1.Size = new System.Drawing.Size(749, 613);
             this.listView1.TabIndex = 8;
             this.listView1.UseCompatibleStateImageBehavior = false;
-            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged_1);
+            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged_2);
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1924, 1052);
+            this.ClientSize = new System.Drawing.Size(1443, 855);
             this.Controls.Add(this.listView1);
             this.Controls.Add(this.folderTree);
             this.Controls.Add(this.txtPath);
@@ -132,7 +126,6 @@
             this.Controls.Add(this.btnOpen);
             this.Controls.Add(this.btnForward);
             this.Controls.Add(this.btnBack);
-            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "Previous";
             this.Load += new System.EventHandler(this.Form1_Load);

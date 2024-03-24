@@ -51,14 +51,13 @@
     <Compile Include="File.cs" />
     <Compile Include="FileListView.cs" />
     <Compile Include="FileManager.cs" />
-    <Compile Include="Utilities\FakeFolder.cs" />
-    <Compile Include="FileManagement.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\History.cs" />
     <Compile Include="Utilities\Image.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
