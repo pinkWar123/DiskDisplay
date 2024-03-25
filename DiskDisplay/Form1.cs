@@ -22,7 +22,7 @@ namespace DiskDisplay
             InitializeComponent();
             var fat32 = new FAT32();
 
-            var folders = fat32.ReadFiles(@"\\.\E:");
+            var folders = fat32.ReadFiles(@"\\.\F:");
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
             foreach(var folder in folders)

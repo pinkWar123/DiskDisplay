@@ -46,3 +46,28 @@ class FATFile : FATFileManager
 
     }
 }
+
+class NTFSFile : NTFSFileManager
+{
+    public NTFSFile() { }
+
+    public override int GetSize()
+    {
+        return (int) FileSize;
+    }
+
+    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate)
+    {
+        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate);
+        IsFile = true;
+    }
+
+    public override void PrintImfomations(int level)
+    {
+       base.PrintImfomations (level);
+    }
+    public override bool FindFather(NTFSFileManager temp)
+    {
+        return base.FindFather(temp);
+    }
+}
