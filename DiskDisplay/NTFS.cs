@@ -109,6 +109,18 @@ static class MFTEntry
     {
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
     }
+    /*private static bool IsCorrectFile(byte[] entry)
+    {
+        if (entry.Length < 4)
+        {
+            // Handle the case where the array is not long enough
+            return false;
+        }
+
+        // Check the conditions using appropriate array index and length
+        return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
+    }*/
+
     public static NTFSFileManager MFTEntryProcess(byte[] entry)
     {
 

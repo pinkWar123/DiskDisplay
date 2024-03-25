@@ -14,14 +14,14 @@ namespace DiskDisplay
         /// </summary>
         [STAThread]
         static void Main()
-        {
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+        {/*
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form1());*/
 
             NTFS ntfs = new NTFS();
             List<FileManager> files = new List<FileManager> ();
-            using (FileStream fileStream = new FileStream(@"\\.\E:", FileMode.Open, FileAccess.Read))
+            using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
             {
                 ntfs.ReadVBR(fileStream);
                 Console.WriteLine("Byte Per Sector: " + ntfs.BytePerSector);
@@ -35,6 +35,7 @@ namespace DiskDisplay
                 ntfs.ReadMFT(fileStream, ref files);
 
             }
+            Console.WriteLine(files.Count);
             for(int i = 0; i < files.Count; i++)
             {
                 files[i].PrintImfomations(0);

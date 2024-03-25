@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Windows.Forms;
 
@@ -11,7 +12,7 @@ class FileManager
     public UInt32 FileSize;
     public string MainName;
     public DateTime Creationdatetime;
-
+    public List<FileManager> Children;
     public virtual int GetSize() { return 0; }
 
     // Properties for UI

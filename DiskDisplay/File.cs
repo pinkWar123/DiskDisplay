@@ -70,4 +70,21 @@ class NTFSFile : NTFSFileManager
     {
         return base.FindFather(temp);
     }
+
+    public override void Populate()
+    {
+        CurrentNode.ImageKey = "fileIcon";
+        CurrentNode.SelectedImageKey = "fileIcon";
+        CurrentNode.Tag = this;
+        if (CurrentNode.Text == "")
+            CurrentNode.Text = MainName;
+
+        CurrentItem.Tag = this;
+        CurrentItem.ImageIndex = 1;
+        CurrentItem.Text = MainName;
+        CurrentItem.SubItems.Add("File");
+        CurrentItem.SubItems.Add(GetSize().ToString());
+        CurrentItem.SubItems.Add(Creationdatetime.ToString());
+
+    }
 }

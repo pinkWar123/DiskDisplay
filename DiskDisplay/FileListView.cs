@@ -9,7 +9,7 @@ namespace DiskDisplay
 {
     internal class FileListView
     {
-        public static List<FATDirectory> History = new List<FATDirectory>();
+        public static List<FileManager> History = new List<FileManager>();
         public static int CurrentHistoryIndex = 0;
         public static bool IsCurrentlyProcessing = false;
 

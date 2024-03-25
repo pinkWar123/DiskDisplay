@@ -17,8 +17,6 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-
-        private int index = 0;
         private bool IsUserInteraction = false;
         public Form1()
         {
@@ -26,12 +24,23 @@ namespace DiskDisplay
             var fat32 = new FAT32();
 
             var folders = fat32.ReadFiles(@"\\.\E:");
-            var RootFolder = new FATDirectory();
-            RootFolder.Children = folders;
+            Console.WriteLine(folders.Count);
+            NTFS ntfs = new NTFS();
+            List<FileManager> files = new List<FileManager>();
+            using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
+            {
+                ntfs.ReadVBR(fileStream);
+                ntfs.ReadMFT(fileStream, ref files);
+                Console.WriteLine("here");
+
+            }
+            Console.WriteLine(files.Count);
+            var RootFolder = new NTFSDirectory();
+            RootFolder.Children = files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
             RootFolder.Populate();
-            foreach(var folder in folders)
+            foreach(var folder in files)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
