@@ -14,6 +14,7 @@ class FAT32
     public UInt32 SectorPerFAT;
     public UInt32 StartingClusterOfRDET;
     public string FATType;
+    
 
 
     //--------------------------------------------------------------
@@ -124,7 +125,7 @@ class FAT32
                 byte[] buffer = new byte[32];
                 Count += 32;
                 fileStream.Read(buffer, 0, 32);
-                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0] == 0xE5 || buffer[0] == 0x55)
+                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0] == 0xE5 || buffer[0x0B] == 0x08)
                     continue;
                 EntryQueue.Enqueue(buffer);
             }

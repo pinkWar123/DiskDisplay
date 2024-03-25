@@ -68,6 +68,62 @@ class FATDirectory : FATFileManager
         CurrentItem.SubItems.Add(GetSize().ToString());
         CurrentItem.SubItems.Add(Creationdatetime.ToString());
     }
+}
+
+class NTFSDirectory : NTFSFileManager
+{
+    public List<FileManager> Children;
+    
+    public NTFSDirectory() {
+        Children = new List<FileManager>();
+    }
+
+    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate)
+    {
+        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate);
+        IsFile = false;
+    }
+    public override void PrintImfomations(int level)
+    {
+        for (int i = 0; i < level; i++)
+        {
+            Console.Write("\t");
+        }
+        Console.WriteLine(MainName + "--" + GetSize() + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
+        for (int i = 0; i < Children.Count; i++)
+        {
+            Children[i].PrintImfomations(level + 1);
+        }
+    }
+
+    public override bool FindFather(NTFSFileManager temp)
+    {
+        if(this.ID == temp.RootID)
+        {
+            this.Children.Add(temp);
+            return true;
+        }
+        
+        for(int i = 0;i < Children.Count; i++)
+        {
+            NTFSFileManager tempfile = (NTFSFileManager)Children[i];
+            if (tempfile.FindFather(temp) == true)
+                return true;
+        }
+        return false;
+
+    }
+
+    public override int GetSize()
+    {
+        var totalSize = 0;
+        foreach (var child in Children)
+        {
+            totalSize += child.GetSize();
+        }
+        return totalSize;
+    }
+}
 
     public override void PopulateListView(ref ListView ListView)
     {

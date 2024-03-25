@@ -68,6 +68,7 @@ class FATFileManager : FileManager
         int year = ((date & 0xFE00) >> 9) + 1980;
         int month = (date & 0x01E0) >> 5;
         int day = date & 0x001F;
+        
 
         return new DateTime(year, month, day, hour, minute, second, millisecond);
     }
@@ -75,5 +76,32 @@ class FATFileManager : FileManager
 
 class NTFSFileManager : FileManager
 {
-    // Add attributes
+    public UInt32 ID;
+    public DateTime modifieddate;
+    public UInt32 RootID;
+
+    public NTFSFileManager() { }
+    virtual public void CloneData(string filename, UInt32 FileSize,UInt32 ID, UInt32 RootID, DateTime CreationDate, DateTime ModifiedDate )
+    {
+        this.MainName = filename;
+        this.FileSize = FileSize;
+        this.ID = ID;
+        this.RootID = RootID;
+        this.Creationdatetime = CreationDate;
+        this.modifieddate = ModifiedDate;
+
+        IsFAT32 = false;
+        IsDelete = false;
+    }
+    public override void PrintImfomations(int level)
+    {
+        for (int i = 0; i < level; i++)
+            Console.Write("\t");
+        Console.WriteLine("**" + MainName + "--" + FileSize + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
+    }
+    virtual public bool FindFather(NTFSFileManager temp)
+    {
+        return false;
+    }
+    
 }
