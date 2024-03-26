@@ -46,12 +46,15 @@ class NTFS
             BytePerEntry = (UInt16)Math.Pow(2, Math.Abs((sbyte)(~VBRBytes[0x40] + 1)));
         }
         else
-            BytePerEntry = VBRBytes[0x40];
+        {
+            BytePerEntry = (UInt32)VBRBytes[0x40] * BytePerSector * SectorPerCluster;
+        }
     }
    
     public void ReadMFT(FileStream fileStream, ref List<FileManager> files)
     {
         byte[] MFTBytes = new byte[BytePerEntry];
+        //byte[] MFTBytes = new byte[1024];
 
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024 , SeekOrigin.Begin);
         int count = 0;
@@ -105,11 +108,11 @@ class NTFS
 
 static class MFTEntry
 {
-    private static bool IsCorrectFile(byte[] entry)
+    /*private static bool IsCorrectFile(byte[] entry)
     {
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
-    }
-    /*private static bool IsCorrectFile(byte[] entry)
+    }*/
+    private static bool IsCorrectFile(byte[] entry)
     {
         if (entry.Length < 4)
         {
@@ -119,7 +122,7 @@ static class MFTEntry
 
         // Check the conditions using appropriate array index and length
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
-    }*/
+    }
 
     public static NTFSFileManager MFTEntryProcess(byte[] entry)
     {

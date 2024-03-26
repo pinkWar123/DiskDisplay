@@ -19,7 +19,6 @@ namespace DiskDisplay
             
             IsCurrentlyProcessing = true;
             listView.Items.Clear();
-            Console.WriteLine("Currently in " + History[CurrentHistoryIndex].MainName);
             Console.WriteLine(History.Count);
             foreach (var child in History[CurrentHistoryIndex].Children)
             {

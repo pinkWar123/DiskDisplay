@@ -7,11 +7,12 @@ using System.Windows.Forms;
 using DiskDisplay;
 using System.Collections;
 
+
 class FATDirectory : FATFileManager
 {
     
     public FATDirectory() { }
-
+    
     public override void CloneData(byte[] data)
     {
         base.CloneData(data);
@@ -45,29 +46,7 @@ class FATDirectory : FATFileManager
     }
 
     // Methods for UI
-    public override void Populate()
-    {
-        CurrentNode.ImageKey = "folderIcon";
-        CurrentNode.SelectedImageKey = "folderIcon";
-        CurrentNode.Tag = this;
-
-        if (Children.Count() == 0) return;
-        if (CurrentNode.Text == "")
-            CurrentNode.Text = MainName;
-        foreach (var child in Children)
-        {
-            TreeNode node = new TreeNode();
-            child.SetNode(node);
-            child.Populate();
-            CurrentNode.Nodes.Add(node);
-        }
-        CurrentItem.Text = MainName;
-        CurrentItem.Tag = this;
-        CurrentItem.SubItems.Add("Folder");
-        CurrentItem.ImageIndex = 0;
-        CurrentItem.SubItems.Add(GetSize().ToString());
-        CurrentItem.SubItems.Add(Creationdatetime.ToString());
-    }
+    
     public override void PopulateListView(ref ListView ListView)
     {
         base.PopulateListView(ref ListView);
@@ -101,6 +80,7 @@ class NTFSDirectory : NTFSFileManager
     public NTFSDirectory() {
         Children = new List<FileManager>();
     }
+
 
     public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate)
     {
@@ -147,54 +127,8 @@ class NTFSDirectory : NTFSFileManager
         }
         return totalSize;
     }
-    public override void Populate()
-    {
-        CurrentNode.ImageKey = "folderIcon";
-        CurrentNode.SelectedImageKey = "folderIcon";
-        CurrentNode.Tag = this;
+    
 
-        if (Children.Count() == 0) return;
-        if (CurrentNode.Text == "")
-            CurrentNode.Text = MainName;
-        foreach (var child in Children)
-        {
-            TreeNode node = new TreeNode();
-            child.SetNode(node);
-            child.Populate();
-            CurrentNode.Nodes.Add(node);
-        }
-        CurrentItem.Text = MainName;
-        CurrentItem.Tag = this;
-        CurrentItem.SubItems.Add("Folder");
-        CurrentItem.ImageIndex = 0;
-        CurrentItem.SubItems.Add(GetSize().ToString());
-        CurrentItem.SubItems.Add(Creationdatetime.ToString());
-    }
-    public override void PopulateListView(ref ListView ListView)
-    {
-        base.PopulateListView(ref ListView);
-        if (FileListView.IsLastDirectory())
-        {
-            ++FileListView.CurrentHistoryIndex;
-            Console.Write("a");
-            FileListView.History.Add(this);
-        }
-        else
-        {
-            if (this == FileListView.History[FileListView.CurrentHistoryIndex + 1])
-            {
-                ++FileListView.CurrentHistoryIndex;
-            }
-            else
-            {
-                int startIndex = FileListView.CurrentHistoryIndex + 1;
-                int count = FileListView.History.Count - startIndex;
-                FileListView.History.RemoveRange(startIndex, count);
-                FileListView.History.Add(this);
-            }
-        }
-        //FileListView.RenderListView(ref ListView);
-    }
 }
 
     

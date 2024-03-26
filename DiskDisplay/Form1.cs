@@ -21,18 +21,12 @@ namespace DiskDisplay
         public Form1()
         {
             InitializeComponent();
-            var fat32 = new FAT32();
-
-            var folders = fat32.ReadFiles(@"\\.\E:");
-            Console.WriteLine(folders.Count);
             NTFS ntfs = new NTFS();
             List<FileManager> files = new List<FileManager>();
             using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
             {
                 ntfs.ReadVBR(fileStream);
                 ntfs.ReadMFT(fileStream, ref files);
-                Console.WriteLine("here");
-
             }
             Console.WriteLine(files.Count);
             var RootFolder = new NTFSDirectory();
@@ -125,7 +119,6 @@ namespace DiskDisplay
 
         private void btnBack_Click(object sender, EventArgs e)
         {
-            //Console.WriteLine(++index);
             if (!FileListView.IsFirstDirectory())
             {
                 IsUserInteraction = true;
@@ -169,10 +162,10 @@ namespace DiskDisplay
                     MessageBox.Show(selectedFile.MainName);
 
                 }
-                else if (selecteditem.Tag is FATDirectory)
+                else if (selecteditem.Tag is NTFSDirectory)
                 {
                     if(IsUserInteraction) return;
-                    var selectedFolder = selecteditem.Tag as FATDirectory;
+                    var selectedFolder = selecteditem.Tag as NTFSDirectory;
                     if(folderTree.SelectedNode != null)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();
@@ -192,7 +185,6 @@ namespace DiskDisplay
                         }
                         else
                         {
-                            Console.WriteLine("Here");
                             int startIndex = FileListView.CurrentHistoryIndex + 1;
                             int count = FileListView.History.Count - startIndex;
                             FileListView.History.RemoveRange(startIndex, count);

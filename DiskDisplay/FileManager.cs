@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -12,7 +13,7 @@ class FileManager
     public UInt32 FileSize;
     public string MainName;
     public DateTime Creationdatetime;
-    public List<FileManager> Children;
+    public List<FileManager> Children = new List<FileManager>();
     public virtual int GetSize() { return 0; }
 
     // Properties for UI
@@ -22,7 +23,28 @@ class FileManager
     virtual public void PrintImfomations(int level) { }
 
     // Methods for UI
-    public virtual void Populate() { }
+    public virtual void Populate()
+    {
+        CurrentNode.ImageKey = IsFile ? "fileIcon" : "folderIcon";
+        CurrentNode.SelectedImageKey = IsFile ? "fileIcon" : "folderIcon";
+        CurrentNode.Tag = this;
+
+        CurrentNode.Text = MainName;
+        foreach (var child in Children)
+        {
+            TreeNode node = new TreeNode();
+            child.SetNode(node);
+            child.Populate();
+            CurrentNode.Nodes.Add(node);
+        }
+        CurrentItem.Text = MainName;
+        CurrentItem.Tag = this;
+        CurrentItem.SubItems.Add(IsFile ? "fileIcon" : "folderIcon");
+        CurrentItem.ImageIndex = 0;
+        CurrentItem.SubItems.Add(GetSize().ToString());
+        CurrentItem.SubItems.Add(Creationdatetime.ToString());
+
+    }
 
     public virtual void PopulateListView(ref ListView ListView) { }
 

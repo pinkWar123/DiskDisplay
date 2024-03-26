@@ -14,13 +14,13 @@ namespace DiskDisplay
         /// </summary>
         [STAThread]
         static void Main()
-        {/*
+        {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());*/
+            Application.Run(new Form1());
 
             NTFS ntfs = new NTFS();
-            List<FileManager> files = new List<FileManager> ();
+            List<FileManager> files = new List<FileManager>();
             using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
             {
                 ntfs.ReadVBR(fileStream);
@@ -36,7 +36,7 @@ namespace DiskDisplay
 
             }
             Console.WriteLine(files.Count);
-            for(int i = 0; i < files.Count; i++)
+            for (int i = 0; i < files.Count; i++)
             {
                 files[i].PrintImfomations(0);
             }
