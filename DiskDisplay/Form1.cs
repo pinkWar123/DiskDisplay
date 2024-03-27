@@ -49,7 +49,6 @@ namespace DiskDisplay
             listView1.SmallImageList = Image1.ImageList;
             
         }
-
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode selecteditem = e.Node;
@@ -57,16 +56,16 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if (selecteditem.Tag is FATFile)
+                if (selecteditem.Tag is NTFSFile)
                 {
-                    var selectedFile = selecteditem.Tag as FATFile;
+                    var selectedFile = selecteditem.Tag as NTFSFile;
                     MessageBox.Show(selectedFile.MainName);
                 }
-                else if (selecteditem.Tag is FATDirectory )
+                else if (selecteditem.Tag is NTFSDirectory )
                 {
                     if (IsUserInteraction) 
                         return;
-                    var selectedFolder = selecteditem.Tag as FATDirectory;
+                    var selectedFolder = selecteditem.Tag as NTFSDirectory;
                     if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();
@@ -152,9 +151,9 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if (selecteditem.Tag is FATFile)
+                if (selecteditem.Tag is NTFSFile)
                 {
-                    var selectedFile = selecteditem.Tag as FATFile;
+                    var selectedFile = selecteditem.Tag as NTFSFile;
                     MessageBox.Show(selectedFile.MainName);
 
                 }

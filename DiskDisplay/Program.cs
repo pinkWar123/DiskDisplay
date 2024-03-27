@@ -15,11 +15,21 @@ namespace DiskDisplay
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            //Application.EnableVisualStyles();
+            //Application.SetCompatibleTextRenderingDefault(false);
+            //Application.Run(new Form1());
 
-            
+            NTFS ntfs = new NTFS("E:");
+            List<FileManager> files = new List<FileManager>();
+            files = ntfs.ReadFileSystem();
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                if (files[i].MainName.EndsWith(".txt"))
+                    Console.WriteLine(ntfs.ReadData(files[i]));
+
+                //files[i].PrintImfomations(0);
+            }
         }
     }
 }

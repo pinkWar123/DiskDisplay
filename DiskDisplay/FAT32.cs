@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Text;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.IO.Pipes;
 class FAT32 : FileSystem
 {
     // This area is used for Boost_Sector's Variables
@@ -62,7 +63,31 @@ class FAT32 : FileSystem
 
     public override string ReadData(FileManager file)
     {
-        // tu tu 
+        if(file is FATFile)
+        {
+            string result = "";
+            FATFile temp = (FATFile)file;
+            if (temp.ExtendedName != "TXT")
+                return "We don't support this file";
+            string filename = @"\\.\" + DriveName;
+            int filesize = (int)temp.FileSize;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                List<UInt32> dataoffile = FindListOfClusters(temp.StartCluster);
+                byte[] bytes = new byte[BytesPerSector + SectorPerCluster];
+                for (int i = 0; i < dataoffile.Count; i++)
+                {
+                    filestream.Seek(OffSetWithCluster(dataoffile[i]), SeekOrigin.Begin);
+                    filestream.Read(bytes, 0, bytes.Length);
+                    int length = (filesize <= bytes.Length) ? filesize : bytes.Length;
+                    result += Encoding.ASCII.GetString(bytes, 0, length);
+                    filesize -= length;
+
+                }
+            }
+            return result;
+        }
+
         return "";
     }
 
