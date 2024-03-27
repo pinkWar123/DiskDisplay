@@ -13,6 +13,8 @@ class FileManager
     public UInt32 FileSize;
     public string MainName;
     public DateTime Creationdatetime;
+
+
     public List<FileManager> Children = new List<FileManager>();
     public virtual int GetSize() { return 0; }
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-class NTFS
+class NTFS : FileSystem
 {
     public UInt16 BytePerSector;
     public byte SectorPerCluster;
@@ -17,13 +17,46 @@ class NTFS
     public UInt32 BytePerEntry;
 
     public NTFS() { }
+    public NTFS(string drive) {
+        this.DriveName = drive;
+    }
 
-    public List<FileManager> ReadFile(string file)
+    public override List<FileManager> ReadFileSystem()
     {
-        // Add code here
-        List<FileManager> files = new List<FileManager>();
+        try
+        {
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                ReadVBR(filestream);
+                List<FileManager> files = new List<FileManager>();
+                ReadMFT(filestream, ref files);
+                return files;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+        }
+        return null;
+    }
 
-        return files;
+    public override string ReadData(FileManager file)
+    {
+        // tu tu 
+        return "";
+    }
+
+    public override bool DeleteFile(FileManager file)
+    {
+        // tu tu
+        return true;
+    }
+
+    public override bool RestoreFile(FileManager file)
+    {
+        // tu tu
+        return true;
     }
 
     public void ReadVBR(FileStream fileStream)
@@ -108,19 +141,10 @@ class NTFS
 
 static class MFTEntry
 {
-    /*private static bool IsCorrectFile(byte[] entry)
-    {
-        return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
-    }*/
+    
     private static bool IsCorrectFile(byte[] entry)
     {
-        if (entry.Length < 4)
-        {
-            // Handle the case where the array is not long enough
-            return false;
-        }
 
-        // Check the conditions using appropriate array index and length
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
     }
 

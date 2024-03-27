@@ -21,15 +21,11 @@ namespace DiskDisplay
         public Form1()
         {
             InitializeComponent();
-            NTFS ntfs = new NTFS();
+            NTFS ntfs = new NTFS("E:");
             List<FileManager> files = new List<FileManager>();
-            using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
-            {
-                ntfs.ReadVBR(fileStream);
-                ntfs.ReadMFT(fileStream, ref files);
-            }
-            Console.WriteLine(files.Count);
-            var RootFolder = new NTFSDirectory();
+            files = ntfs.ReadFileSystem();
+
+            var RootFolder = new NTFSDirectory() ;
             RootFolder.Children = files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
@@ -65,11 +61,11 @@ namespace DiskDisplay
                 {
                     var selectedFile = selecteditem.Tag as FATFile;
                     MessageBox.Show(selectedFile.MainName);
-
                 }
-                else if (selecteditem.Tag is FATDirectory)
+                else if (selecteditem.Tag is FATDirectory )
                 {
-                    if (IsUserInteraction) return;
+                    if (IsUserInteraction) 
+                        return;
                     var selectedFolder = selecteditem.Tag as FATDirectory;
                     if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
                         folderTree.SelectedNode.BackColor = Color.White;
