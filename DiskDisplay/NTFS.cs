@@ -53,15 +53,20 @@ class NTFS : FileSystem
 
                 string result = "";
                 string filename = @"\\.\" + DriveName;
+                Int32 size = (Int32)tempfile.FileSize;
                 using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
                 {
-                    UInt32 size = tempfile.FileSize;
-                    byte[] data = new byte[size];
-
+                    byte[] data = new byte[BytePerSector * SectorPerCluster];
                     Int64 Offset = OffsetWithCluster((UInt64)(tempfile.StartCluster));
-                    filestream.Read(data, (int)Offset, data.Length);
+                    filestream.Seek(Offset, SeekOrigin.Begin);
+                    while(size > 0)
+                    {
+                        filestream.Read(data, 0, (int)BytePerSector * SectorPerCluster);
+                        result += Encoding.ASCII.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
+                        size -= data.Length;
+                    }
 
-                    result += Encoding.ASCII.GetString(data);
+                    
                 }
                 return result;
             }

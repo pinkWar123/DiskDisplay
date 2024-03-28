@@ -41,29 +41,21 @@ class FAT32 : FileSystem
 
     public override List<FileManager> ReadFileSystem()
     {
-        try
+        string filename = @"\\.\" + DriveName;
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
         {
-            string filename = @"\\.\" + DriveName;
-            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
-            {
-                ReadBoostSector(filestream);
-                ReadFAT1(filestream);
+            ReadBoostSector(filestream);
+            ReadFAT1(filestream);
 
-                List<FileManager> files = new List<FileManager>();
-                ReadDET(filestream, StartingClusterOfRDET, ref files);
-                return files;
-            }
+            List<FileManager> files = new List<FileManager>();
+            ReadDET(filestream, StartingClusterOfRDET, ref files);
+            return files;
         }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.ToString());
-        }
-        return null;
     }
 
     public override string ReadData(FileManager file)
     {
-        if(file is FATFile)
+        if (file is FATFile)
         {
             string result = "";
             FATFile temp = (FATFile)file;
@@ -74,7 +66,7 @@ class FAT32 : FileSystem
             using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
             {
                 List<UInt32> dataoffile = FindListOfClusters(temp.StartCluster);
-                byte[] bytes = new byte[BytesPerSector + SectorPerCluster];
+                byte[] bytes = new byte[BytesPerSector * SectorPerCluster];
                 for (int i = 0; i < dataoffile.Count; i++)
                 {
                     filestream.Seek(OffSetWithCluster(dataoffile[i]), SeekOrigin.Begin);
@@ -176,7 +168,7 @@ class FAT32 : FileSystem
                 byte[] buffer = new byte[32];
                 Count += 32;
                 fileStream.Read(buffer, 0, 32);
-                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08)
+                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 || buffer[0] == 0xE5)
                     continue;
                 EntryQueue.Enqueue(buffer);
             }
