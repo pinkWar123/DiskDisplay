@@ -19,14 +19,13 @@ namespace DiskDisplay
             //Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Form1());
 
-            FAT32 ntfs = new FAT32("F:");
+            FileSystem ntfs = new NTFS("E:");
             List<FileManager> files = new List<FileManager>();
             files = ntfs.ReadFileSystem();
 
             for (int i = 0; i < files.Count; i++)
             {
-                Console.WriteLine(ntfs.ReadData(files[i]));
-
+                files[i].PrintImfomations(0);
             }
         }
     }

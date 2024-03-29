@@ -55,11 +55,11 @@ class FAT32 : FileSystem
 
     public override string ReadData(FileManager file)
     {
-        if (file is FATFile)
+        if (file is File && file.IsFAT32)
         {
             string result = "";
-            FATFile temp = (FATFile)file;
-            if (temp.ExtendedName != "TXT")
+            File temp = (File)file;
+            if (!temp.MainName.EndsWith(".txt") || temp.ExtendedName != "TXT")
                 return "We don't support this file";
             string filename = @"\\.\" + DriveName;
             int filesize = (int)temp.FileSize;
@@ -82,11 +82,41 @@ class FAT32 : FileSystem
 
         return "";
     }
+    private bool ChangeFat(FileStream filestream, UInt32 Offset, List<UInt32> ListofCLuster, Int32 value)
+    {
+        byte[] bytes;
+        for(int i = 0; i < ListofCLuster.Count; i++ )
+        {
+            if (value != 0x00)
+                bytes = BitConverter.GetBytes(value);
+            else
+            {
+                if(i == ListofCLuster.Count)
+                    bytes = BitConverter.GetBytes(0xFFFFFFFF);
+                else
+                    bytes = BitConverter.GetBytes(ListofCLuster[i]);
+            }
 
+            filestream.Write(bytes, (int)(ListofCLuster[i] - 2) * 4 + (int)Offset, bytes.Length);
+        }
+        return true;
+    }
+    private bool ChangeEntry(FileStream filestream, FileManager file)
+    {
+        return true;
+    }
     public override bool DeleteFile(FileManager file)
     {
-        // tu tu
-        return true;
+        if (file is File && file.IsFAT32)
+        {
+            List<UInt32> ListofCluster = FindListOfClusters(file.StartCluster);
+            
+        }
+        else if (file is Directory && file.IsFAT32)
+        {
+            // Logic for Directory
+        }
+        return false;
     }
 
     public override bool RestoreFile(FileManager file)
@@ -168,8 +198,13 @@ class FAT32 : FileSystem
                 byte[] buffer = new byte[32];
                 Count += 32;
                 fileStream.Read(buffer, 0, 32);
-                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 || buffer[0] == 0xE5)
+                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 )
                     continue;
+                if (buffer[0] == 0xE5)
+                {
+                    // ADD logic later -- restore file
+                    continue;
+                }
                 EntryQueue.Enqueue(buffer);
             }
         }
@@ -220,13 +255,13 @@ class FAT32 : FileSystem
     {
         if (IsArchive(temp[0x0B]))
         {
-            FATFile tempfile = new FATFile();
+            File tempfile = new File();
             tempfile.CloneData(temp);
 
             return tempfile;
         }
 
-        FATDirectory tempdirectory = new FATDirectory();
+        Directory tempdirectory = new Directory();
         tempdirectory.CloneData(temp);
         if (tempdirectory.MainName != ".       " && tempdirectory.MainName != "..      ")
         {
@@ -251,7 +286,7 @@ class FAT32 : FileSystem
         {
             result.Add(CurrentCluster);
 
-            if (FATTable[(int)CurrentCluster] == 0xFFFFFFFF || FATTable[(int)CurrentCluster] == 0x0FFFFFFF || FATTable[(int)CurrentCluster] == 0xF7FFFFFFF)
+            if (FATTable[(int)CurrentCluster] == 0xFFFFFFFF || FATTable[(int)CurrentCluster] == 0x0FFFFFFF || FATTable[(int)CurrentCluster] == 0xF7FFFFFF || FATTable[(int)CurrentCluster] == 0xF8FFFF0F)
             {
                 break;
             }
