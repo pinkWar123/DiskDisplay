@@ -30,14 +30,14 @@ namespace DiskDisplay
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
             RootFolder.Populate();
-            var RootFolder1 = new FATDirectory();
-            var fat32 = new FAT32();
-            RootFolder1.Children = fat32.ReadFiles(@"\\.\E:");
-            foreach (var folder in RootFolder1.Children)
+            
+            /*var RootFolder1 = new NTFSDirectory();
+            RootFolder1.Children = files;*/
+            /*foreach (var folder in RootFolder.Children)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
-            }
+            }*/
             foreach (var folder in files)
             {
                 folderTree.Nodes.Add(folder.GetNode());
