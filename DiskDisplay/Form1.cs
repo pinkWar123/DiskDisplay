@@ -21,15 +21,11 @@ namespace DiskDisplay
         public Form1()
         {
             InitializeComponent();
-            NTFS ntfs = new NTFS();
+            NTFS ntfs = new NTFS("E:");
             List<FileManager> files = new List<FileManager>();
-            using (FileStream fileStream = new FileStream(@"\\.\E:", FileMode.Open, FileAccess.Read))
-            {
-                ntfs.ReadVBR(fileStream);
-                ntfs.ReadMFT(fileStream, ref files);
-            }
-            Console.WriteLine(files.Count);
-            var RootFolder = new NTFSDirectory();
+            files = ntfs.ReadFileSystem();
+
+            var RootFolder = new NTFSDirectory() ;
             RootFolder.Children = files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
@@ -61,7 +57,6 @@ namespace DiskDisplay
             listView1.SmallImageList = Image1.ImageList;
             
         }
-
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode selecteditem = e.Node;
@@ -69,16 +64,16 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if (selecteditem.Tag is FATFile)
+                if (selecteditem.Tag is NTFSFile)
                 {
-                    var selectedFile = selecteditem.Tag as FATFile;
+                    var selectedFile = selecteditem.Tag as NTFSFile;
                     MessageBox.Show(selectedFile.MainName);
-
                 }
-                else if (selecteditem.Tag is FATDirectory)
+                else if (selecteditem.Tag is NTFSDirectory )
                 {
-                    if (IsUserInteraction) return;
-                    var selectedFolder = selecteditem.Tag as FATDirectory;
+                    if (IsUserInteraction) 
+                        return;
+                    var selectedFolder = selecteditem.Tag as NTFSDirectory;
                     if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();
@@ -164,9 +159,9 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if (selecteditem.Tag is FATFile)
+                if (selecteditem.Tag is NTFSFile)
                 {
-                    var selectedFile = selecteditem.Tag as FATFile;
+                    var selectedFile = selecteditem.Tag as NTFSFile;
                     MessageBox.Show(selectedFile.MainName);
 
                 }

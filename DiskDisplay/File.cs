@@ -56,9 +56,9 @@ class NTFSFile : NTFSFileManager
         return (int) FileSize;
     }
 
-    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate)
+    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate,  UInt32 StartingCluster, UInt32 ContigousCluster, byte Isnon_Resident, string content)
     {
-        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate);
+        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate, StartingCluster, ContigousCluster, Isnon_Resident, content);
         IsFile = true;
     }
 

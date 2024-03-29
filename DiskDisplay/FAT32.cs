@@ -3,7 +3,9 @@ using System.IO;
 using System.Numerics;
 using System.Text;
 using System.Collections.Generic;
-class FAT32
+using System.Runtime.CompilerServices;
+using System.IO.Pipes;
+class FAT32 : FileSystem
 {
     // This area is used for Boost_Sector's Variables
     public UInt16 BytesPerSector;
@@ -14,7 +16,7 @@ class FAT32
     public UInt32 SectorPerFAT;
     public UInt32 StartingClusterOfRDET;
     public string FATType;
-    
+
 
 
     //--------------------------------------------------------------
@@ -24,31 +26,23 @@ class FAT32
     UInt32[] FATTable;
     //--------------------------------------------------------------
 
-    
+
     //--------------------------------------------------------------
 
     public FAT32()
     {
-        FATType = ""; // t de vay de no khong bao loi nua
-    }
-    public FAT32(FileStream fileStream)
-    {
-
+        FATType = "";
     }
     public FAT32(string file)
     {
-        using (FileStream filestream = new FileStream(file,FileMode.Open, FileAccess.Read))
-        {
-            ReadBoostSector(filestream);
-            ReadFAT1(filestream);
-            
-        }
+        DriveName = file;
     }
     ~FAT32() { }
 
-    public List<FileManager> ReadFiles(string file)
+    public override List<FileManager> ReadFileSystem()
     {
-        using (FileStream filestream = new FileStream(file, FileMode.Open, FileAccess.Read))
+        string filename = @"\\.\" + DriveName;
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
         {
             ReadBoostSector(filestream);
             ReadFAT1(filestream);
@@ -58,11 +52,55 @@ class FAT32
             return files;
         }
     }
+
+    public override string ReadData(FileManager file)
+    {
+        if (file is FATFile)
+        {
+            string result = "";
+            FATFile temp = (FATFile)file;
+            if (temp.ExtendedName != "TXT")
+                return "We don't support this file";
+            string filename = @"\\.\" + DriveName;
+            int filesize = (int)temp.FileSize;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                List<UInt32> dataoffile = FindListOfClusters(temp.StartCluster);
+                byte[] bytes = new byte[BytesPerSector * SectorPerCluster];
+                for (int i = 0; i < dataoffile.Count; i++)
+                {
+                    filestream.Seek(OffSetWithCluster(dataoffile[i]), SeekOrigin.Begin);
+                    filestream.Read(bytes, 0, bytes.Length);
+                    int length = (filesize <= bytes.Length) ? filesize : bytes.Length;
+                    result += Encoding.ASCII.GetString(bytes, 0, length);
+                    filesize -= length;
+
+                }
+            }
+            return result;
+        }
+
+        return "";
+    }
+
+    public override bool DeleteFile(FileManager file)
+    {
+        // tu tu
+        return true;
+    }
+
+    public override bool RestoreFile(FileManager file)
+    {
+        // tu tu
+        return true;
+    }
+
+
+    // This Function is used to read Boost Sector in partition
     public void ReadBoostSector(FileStream fileStream)
     {
         fileStream.Seek(0, SeekOrigin.Begin);
 
-        // Only read main methods in Boost Sector---From teacher
         byte[] bootSectorBytes = new byte[512];
         fileStream.Read(bootSectorBytes, 0, bootSectorBytes.Length);
 
@@ -76,6 +114,7 @@ class FAT32
         FATType = Encoding.ASCII.GetString(bootSectorBytes, 0x52, 8);
     }
 
+    // This Function is used to read File Allocation table (FAT1)
     public void ReadFAT1(FileStream fileStream)
     {
         fileStream.Seek(BytesPerSector * ReversedSector, SeekOrigin.Begin);
@@ -91,7 +130,8 @@ class FAT32
         }
     }
 
-    private bool IsFile(byte data)
+    // This function will determie if This File is Archive
+    private bool IsArchive(byte data)
     {
         byte mask = (byte)(1 << 5);
         // check if Archive bit(bit 5) is 1
@@ -101,6 +141,7 @@ class FAT32
         }
         return false;
     }
+    //This function find Length of Name with Long name in Secondery Entry
     private int FindLengthOfName(byte[] data, int index, int maxlength)
     {
         for (int i = 0; i < maxlength; i += 2)
@@ -111,6 +152,8 @@ class FAT32
         }
         return maxlength;
     }
+
+    // This Function will Read all FIle in RDET and SDET and return list of FileManager
     public void ReadDET(FileStream fileStream, UInt32 StartingCluster, ref List<FileManager> FileRoot)
     {
         List<UInt32> ListofCluster = FindListOfClusters(StartingCluster);
@@ -125,7 +168,7 @@ class FAT32
                 byte[] buffer = new byte[32];
                 Count += 32;
                 fileStream.Read(buffer, 0, 32);
-                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0] == 0xE5 || buffer[0x0B] == 0x08)
+                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 || buffer[0] == 0xE5)
                     continue;
                 EntryQueue.Enqueue(buffer);
             }
@@ -175,7 +218,7 @@ class FAT32
     }
     private FileManager ProcessShortName(FileStream fileStream, byte[] temp)
     {
-        if (IsFile(temp[0x0B]))
+        if (IsArchive(temp[0x0B]))
         {
             FATFile tempfile = new FATFile();
             tempfile.CloneData(temp);

@@ -13,6 +13,10 @@ class FileManager
     public UInt32 FileSize;
     public string MainName;
     public DateTime Creationdatetime;
+
+    public UInt16 StartCluster;
+
+
     public List<FileManager> Children = new List<FileManager>();
     public virtual int GetSize() { return 0; }
 
@@ -65,7 +69,6 @@ class FileManager
 }
 class FATFileManager : FileManager
 {
-    public UInt16 StartCluster;
     public FATFileManager() { }
 
     virtual public void CloneData(byte[] data)
@@ -102,9 +105,14 @@ class NTFSFileManager : FileManager
     public UInt32 ID;
     public DateTime modifieddate;
     public UInt32 RootID;
+    public UInt32 NumberOfContigousClusterOfContent;
+    public string content_President;
+    public bool IsNon_Resident;
+
 
     public NTFSFileManager() { }
-    virtual public void CloneData(string filename, UInt32 FileSize,UInt32 ID, UInt32 RootID, DateTime CreationDate, DateTime ModifiedDate )
+    virtual public void CloneData(string filename, UInt32 FileSize,UInt32 ID, UInt32 RootID, DateTime CreationDate,
+        DateTime ModifiedDate, UInt32 StartingCluster, UInt32 ContigousCluster, byte Isnon_Resident, string content )
     {
         this.MainName = filename;
         this.FileSize = FileSize;
@@ -112,6 +120,10 @@ class NTFSFileManager : FileManager
         this.RootID = RootID;
         this.Creationdatetime = CreationDate;
         this.modifieddate = ModifiedDate;
+        this.StartCluster = (UInt16)StartingCluster;
+        this.NumberOfContigousClusterOfContent = ContigousCluster;
+        this.content_President = content;
+        this.IsNon_Resident = (Isnon_Resident == 0x01) ? true : false;
 
         IsFAT32 = false;
         IsDelete = false;
