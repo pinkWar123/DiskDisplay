@@ -21,7 +21,7 @@ namespace DiskDisplay
 
             NTFS ntfs = new NTFS();
             List<FileManager> files = new List<FileManager>();
-            using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
+            using (FileStream fileStream = new FileStream(@"\\.\E:", FileMode.Open, FileAccess.Read))
             {
                 ntfs.ReadVBR(fileStream);
                 Console.WriteLine("Byte Per Sector: " + ntfs.BytePerSector);
