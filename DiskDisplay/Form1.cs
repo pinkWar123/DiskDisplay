@@ -25,7 +25,7 @@ namespace DiskDisplay
             List<FileManager> files = new List<FileManager>();
             files = ntfs.ReadFileSystem();
 
-            var RootFolder = new NTFSDirectory() ;
+            var RootFolder = new Directory() ;
             RootFolder.Children = files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
@@ -64,16 +64,16 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if (selecteditem.Tag is NTFSFile)
+                if (selecteditem.Tag is File)
                 {
-                    var selectedFile = selecteditem.Tag as NTFSFile;
+                    var selectedFile = selecteditem.Tag as File;
                     MessageBox.Show(selectedFile.MainName);
                 }
-                else if (selecteditem.Tag is NTFSDirectory )
+                else if (selecteditem.Tag is Directory )
                 {
                     if (IsUserInteraction) 
                         return;
-                    var selectedFolder = selecteditem.Tag as NTFSDirectory;
+                    var selectedFolder = selecteditem.Tag as Directory;
                     if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();
@@ -159,16 +159,16 @@ namespace DiskDisplay
             {
                 // Your logic here
                 // Do something with the selected item
-                if (selecteditem.Tag is NTFSFile)
+                if (selecteditem.Tag is File)
                 {
-                    var selectedFile = selecteditem.Tag as NTFSFile;
+                    var selectedFile = selecteditem.Tag as File;
                     MessageBox.Show(selectedFile.MainName);
 
                 }
-                else if (selecteditem.Tag is NTFSDirectory)
+                else if (selecteditem.Tag is Directory)
                 {
                     if(IsUserInteraction) return;
-                    var selectedFolder = selecteditem.Tag as NTFSDirectory;
+                    var selectedFolder = selecteditem.Tag as Directory;
                     if(folderTree.SelectedNode != null)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();

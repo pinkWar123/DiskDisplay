@@ -43,9 +43,9 @@ class NTFS : FileSystem
 
     public override string ReadData(FileManager file)
     {
-        if (file is NTFSFile)
+        if (file is File && file.IsFAT32 == false)
         {
-            NTFSFile tempfile = (NTFSFile)file;
+            File tempfile = (File)file;
             if(tempfile.MainName.EndsWith(".txt"))
             {
                 if (tempfile.IsNon_Resident == false)
@@ -65,8 +65,6 @@ class NTFS : FileSystem
                         result += Encoding.ASCII.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
                         size -= data.Length;
                     }
-
-                    
                 }
                 return result;
             }
@@ -121,12 +119,12 @@ class NTFS : FileSystem
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024 , SeekOrigin.Begin);
         int count = 0;
         //FileManager temp = new FileManager();
-        List<NTFSFileManager > OrphanedFile = new List<NTFSFileManager>();
+        List<FileManager > OrphanedFile = new List<FileManager>();
         while(count++ < 200)
         {
             fileStream.Read(MFTBytes, 0, MFTBytes.Length);
 
-            NTFSFileManager temp = MFTEntry.MFTEntryProcess(MFTBytes);
+            FileManager temp = MFTEntry.MFTEntryProcess(MFTBytes);
             if(temp != null)
             {
                 if(temp.RootID != 0x05)
@@ -135,7 +133,7 @@ class NTFS : FileSystem
                     {
                         if (OrphanedFile[i].RootID == temp.ID)
                         {
-                            NTFSDirectory dir = (NTFSDirectory)temp;
+                            Directory dir = (Directory)temp;
                             dir.Children.Add(OrphanedFile[i]);
                             OrphanedFile.RemoveAt(i);
                             --i;
@@ -145,7 +143,7 @@ class NTFS : FileSystem
                     bool Orphanedflag = true;
                     for(int i = 0; i < files.Count; i++)
                     {
-                        NTFSFileManager tempfile = (NTFSFileManager)files[i];
+                        FileManager tempfile = (FileManager)files[i];
                         if(tempfile.FindFather(temp) == true)
                             Orphanedflag = false;
                     }
@@ -191,7 +189,7 @@ static class MFTEntry
 
         return BitConverter.ToUInt64(temp, 0);
     }
-    public static NTFSFileManager MFTEntryProcess(byte[] entry)
+    public static FileManager MFTEntryProcess(byte[] entry)
     {
 
         if(!IsCorrectFile(entry))
@@ -278,13 +276,13 @@ static class MFTEntry
 
         if(status == 0x01) // File
         {
-            NTFSFile result = new NTFSFile();
+            File result = new File();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
             return result;
         }
         else
         {
-            NTFSDirectory result = new NTFSDirectory();
+            Directory result = new Directory();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident,  content);
             return result;
         }
