@@ -7,11 +7,12 @@ using System.Windows.Forms;
 using DiskDisplay;
 using System.Collections;
 
+
 class FATDirectory : FATFileManager
 {
-    public List<FileManager> Children;
+    
     public FATDirectory() { }
-
+    
     public override void CloneData(byte[] data)
     {
         base.CloneData(data);
@@ -45,44 +46,23 @@ class FATDirectory : FATFileManager
     }
 
     // Methods for UI
-    public override void Populate()
-    {
-        CurrentNode.ImageKey = "folderIcon";
-        CurrentNode.SelectedImageKey = "folderIcon";
-        CurrentNode.Tag = this;
-
-        if (Children.Count() == 0) return;
-        if (CurrentNode.Text == "")
-            CurrentNode.Text = MainName;
-        foreach (var child in Children)
-        {
-            TreeNode node = new TreeNode();
-            child.SetNode(node);
-            child.Populate();
-            CurrentNode.Nodes.Add(node);
-        }
-        CurrentItem.Text = MainName;
-        CurrentItem.Tag = this;
-        CurrentItem.SubItems.Add("Folder");
-        CurrentItem.ImageIndex = 0;
-        CurrentItem.SubItems.Add(GetSize().ToString());
-        CurrentItem.SubItems.Add(Creationdatetime.ToString());
-    }
-
+    
     public override void PopulateListView(ref ListView ListView)
     {
         base.PopulateListView(ref ListView);
-        if(FileListView.IsLastDirectory())
+        if (FileListView.IsLastDirectory())
         {
             ++FileListView.CurrentHistoryIndex;
             Console.Write("a");
             FileListView.History.Add(this);
-        } else
+        }
+        else
         {
-            if(this == FileListView.History[FileListView.CurrentHistoryIndex + 1])
+            if (this == FileListView.History[FileListView.CurrentHistoryIndex + 1])
             {
                 ++FileListView.CurrentHistoryIndex;
-            } else
+            }
+            else
             {
                 int startIndex = FileListView.CurrentHistoryIndex + 1;
                 int count = FileListView.History.Count - startIndex;
@@ -93,3 +73,62 @@ class FATDirectory : FATFileManager
         //FileListView.RenderListView(ref ListView);
     }
 }
+
+class NTFSDirectory : NTFSFileManager
+{
+    
+    public NTFSDirectory() {
+        Children = new List<FileManager>();
+    }
+
+
+    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate)
+    {
+        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate);
+        IsFile = false;
+    }
+    public override void PrintImfomations(int level)
+    {
+        for (int i = 0; i < level; i++)
+        {
+            Console.Write("\t");
+        }
+        Console.WriteLine(MainName + "--" + GetSize() + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
+        for (int i = 0; i < Children.Count; i++)
+        {
+            Children[i].PrintImfomations(level + 1);
+        }
+    }
+
+    public override bool FindFather(NTFSFileManager temp)
+    {
+        if(this.ID == temp.RootID)
+        {
+            this.Children.Add(temp);
+            return true;
+        }
+        
+        for(int i = 0;i < Children.Count; i++)
+        {
+            NTFSFileManager tempfile = (NTFSFileManager)Children[i];
+            if (tempfile.FindFather(temp) == true)
+                return true;
+        }
+        return false;
+
+    }
+
+    public override int GetSize()
+    {
+        var totalSize = 0;
+        foreach (var child in Children)
+        {
+            totalSize += child.GetSize();
+        }
+        return totalSize;
+    }
+    
+
+}
+
+    

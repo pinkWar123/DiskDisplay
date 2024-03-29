@@ -9,7 +9,7 @@ namespace DiskDisplay
 {
     internal class FileListView
     {
-        public static List<FATDirectory> History = new List<FATDirectory>();
+        public static List<FileManager> History = new List<FileManager>();
         public static int CurrentHistoryIndex = 0;
         public static bool IsCurrentlyProcessing = false;
 
@@ -19,7 +19,6 @@ namespace DiskDisplay
             
             IsCurrentlyProcessing = true;
             listView.Items.Clear();
-            Console.WriteLine("Currently in " + History[CurrentHistoryIndex].MainName);
             Console.WriteLine(History.Count);
             foreach (var child in History[CurrentHistoryIndex].Children)
             {
