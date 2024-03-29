@@ -23,7 +23,7 @@ namespace DiskDisplay
             InitializeComponent();
             NTFS ntfs = new NTFS();
             List<FileManager> files = new List<FileManager>();
-            using (FileStream fileStream = new FileStream(@"\\.\F:", FileMode.Open, FileAccess.Read))
+            using (FileStream fileStream = new FileStream(@"\\.\E:", FileMode.Open, FileAccess.Read))
             {
                 ntfs.ReadVBR(fileStream);
                 ntfs.ReadMFT(fileStream, ref files);
@@ -34,7 +34,15 @@ namespace DiskDisplay
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
             RootFolder.Populate();
-            foreach(var folder in files)
+            var RootFolder1 = new FATDirectory();
+            var fat32 = new FAT32();
+            RootFolder1.Children = fat32.ReadFiles(@"\\.\E:");
+            foreach (var folder in RootFolder1.Children)
+            {
+                folderTree.Nodes.Add(folder.GetNode());
+                listView1.Items.Add(folder.GetListViewItem());
+            }
+            foreach (var folder in files)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
