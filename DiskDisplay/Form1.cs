@@ -17,8 +17,8 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("E:");
-        private NTFS ntfs = new NTFS("Y:");
+        private FAT32 fat32 = new FAT32("Y:");
+        private NTFS ntfs = new NTFS("E:");
         private bool IsUserInteraction = false;
         public Form1()
         {
@@ -33,26 +33,35 @@ namespace DiskDisplay
             RootFolder.Children = fat32Files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
-            RootFolder.SetItemText("F:");
-            RootFolder.SetNodeText("F:");
 
             var RootFolder1 = new Directory();
             RootFolder1.Children = files;
-            RootFolder1.SetItemText("G:");
-            RootFolder1.SetNodeText("G:");
 
-
+            var RecycleBin = new Directory();
+            RecycleBin.Children = FileSystem.RecycleBin;
+            
 
             var SystemFolder = new Directory() ;
             SystemFolder.Children.Add(RootFolder);
             SystemFolder.Children.Add(RootFolder1);
+            SystemFolder.Children.Add(RecycleBin);
             SystemFolder.Populate();
             foreach (var folder in SystemFolder.Children)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
             }
+
+            RootFolder1.SetItemText("E:");
+            RootFolder1.SetNodeText("E:");
+            RootFolder.SetItemText("Y:");
+            RootFolder.SetNodeText("Y:");
+            RecycleBin.SetItemText("Recycle Bin");
+            RecycleBin.SetNodeText("Recycle Bin");
+            RecycleBin.SetIcon("recycleBinIcon", 2);
             FileListView.History.Add(SystemFolder);
+
+            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -64,7 +73,11 @@ namespace DiskDisplay
             listView1.Columns.Add("Size", 100);
             listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
-            
+            listView1.MouseDoubleClick += listView1_MouseDoubleClick;
+            listView1.MouseClick += listView1_MouseUp;
+
+
+
         }
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
@@ -154,21 +167,14 @@ namespace DiskDisplay
 
         }
 
+
         private void listView1_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == System.Windows.Forms.MouseButtons.Right)
-            {
-                rightClicked = true;
-            }
-            else
-            {
-                rightClicked = false;
-            }
+            MessageBox.Show("ahihi");
         }
-        bool rightClicked = false;
+        //bool rightClicked = false;
         private void listView1_MouseUp(object sender, MouseEventArgs e)
         {
-            rightClicked = false;
             if (e.Button == MouseButtons.Right)
             {
                 ListViewHitTestInfo hitTestInfo = listView1.HitTest(e.X, e.Y);
@@ -178,33 +184,23 @@ namespace DiskDisplay
                 }
             }
         }
-        private void listView1_SelectedIndexChanged_2(object sender, EventArgs e)
+        private void listView1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            if(rightClicked)
-            {
-                listView1.SelectedItems.Clear();
-                return;
-            }
-            if(e is MouseEventArgs)
-            {
-                var _e = e as MouseEventArgs;
-                if (_e.Button == MouseButtons.Right) return;
-            }
             ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
             if (selecteditem != null)
             {
                 if (selecteditem.Tag is File)
                 {
                     var selectedFile = selecteditem.Tag as File;
-                    
+
                     FileWindow f2 = new FileWindow();
                     f2.ShowFileContent(ntfs.ReadData(selectedFile));
                 }
                 else if (selecteditem.Tag is Directory)
                 {
-                    if(IsUserInteraction) return;
+                    if (IsUserInteraction) return;
                     var selectedFolder = selecteditem.Tag as Directory;
-                    if(folderTree.SelectedNode != null)
+                    if (folderTree.SelectedNode != null)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();
                     folderTree.SelectedNode.BackColor = Color.Yellow;
@@ -231,12 +227,73 @@ namespace DiskDisplay
                         }
                     }
                     FileListView.RenderListView(ref listView1);
-                    
+
+                }
+            }
+            }
+
+        private void listView1_SelectedIndexChanged_2(object sender, EventArgs e)
+        {
+            /*if (rightClicked)
+            {
+                listView1.SelectedItems.Clear();
+                return;
+            }
+            if (e is MouseEventArgs)
+            {
+                var _e = e as MouseEventArgs;
+                if (_e.Button == MouseButtons.Right) return;
+            }
+            ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
+            if (selecteditem != null)
+            {
+                if (selecteditem.Tag is File)
+                {
+                    var selectedFile = selecteditem.Tag as File;
+
+                    FileWindow f2 = new FileWindow();
+                    f2.ShowFileContent(ntfs.ReadData(selectedFile));
+                }
+                else if (selecteditem.Tag is Directory)
+                {
+                    if (IsUserInteraction) return;
+                    var selectedFolder = selecteditem.Tag as Directory;
+                    if (folderTree.SelectedNode != null)
+                        folderTree.SelectedNode.BackColor = Color.White;
+                    folderTree.SelectedNode = selectedFolder.GetNode();
+                    folderTree.SelectedNode.BackColor = Color.Yellow;
+                    if (FileListView.IsLastDirectory())
+                    {
+                        ++FileListView.CurrentHistoryIndex;
+                        FileListView.History.Add(selectedFolder);
+                    }
+                    else
+                    {
+                        if (selectedFolder == FileListView.History[FileListView.CurrentHistoryIndex + 1])
+                        {
+                            Console.WriteLine("Here1");
+
+                            ++FileListView.CurrentHistoryIndex;
+                        }
+                        else
+                        {
+                            int startIndex = FileListView.CurrentHistoryIndex + 1;
+                            int count = FileListView.History.Count - startIndex;
+                            FileListView.History.RemoveRange(startIndex, count);
+                            FileListView.History.Add(selectedFolder);
+                            ++FileListView.CurrentHistoryIndex;
+                        }
+                    }
+                    FileListView.RenderListView(ref listView1);
+
                 }
 
-            }
+            }*/
         }
 
-        
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -38,6 +38,14 @@ class FileManager
     {
         CurrentItem.Text = text;
     }
+
+    public void SetIcon(string icon, int imgIdx)
+    {
+        CurrentNode.ImageKey = icon;
+        CurrentNode.SelectedImageKey = icon;
+        CurrentItem.ImageKey = icon;
+        CurrentItem.ImageIndex = imgIdx;
+    }
     public virtual int GetSize() { return 0; }
 
     // 

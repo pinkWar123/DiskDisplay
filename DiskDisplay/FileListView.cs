@@ -20,9 +20,9 @@ namespace DiskDisplay
             IsCurrentlyProcessing = true;
             listView.Items.Clear();
             Console.WriteLine(History.Count);
+            if(History[CurrentHistoryIndex].Children != null)
             foreach (var child in History[CurrentHistoryIndex].Children)
             {
-                Console.Write("b");
                 listView.Items.Add(child.GetListViewItem());
             }
 

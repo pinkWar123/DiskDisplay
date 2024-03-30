@@ -10,7 +10,7 @@ using System.Collections;
 
 class Directory : FileManager
 {
-    
+
     public Directory()
     {
         Children = new List<FileManager>();
@@ -101,13 +101,16 @@ class Directory : FileManager
         CurrentNode.Tag = this;
 
         CurrentNode.Text = MainName;
-        if(Children!= null)
-            foreach (var child in Children)
+        if (Children != null)
         {
-            TreeNode node = new TreeNode();
-            child.SetNode(node);
-            child.Populate();
-            CurrentNode.Nodes.Add(node);
+            foreach (var child in Children)
+            {
+                TreeNode node = new TreeNode();
+                child.SetNode(node);
+                child.Populate();
+                CurrentNode.Nodes.Add(node);
+            }
+
         }
         CurrentItem.Text = MainName;
         CurrentItem.Tag = this;
