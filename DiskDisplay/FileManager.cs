@@ -12,6 +12,7 @@ class FileManager
 
     public UInt32 FileSize;
     public string MainName;
+    public string ExtendedName = "";
     public DateTime Creationdatetime;
     public UInt16 StartCluster;
 
@@ -107,7 +108,7 @@ class FileManager
         int month = (date & 0x01E0) >> 5;
         int day = date & 0x001F;
 
-
+        
         return new DateTime(year, month, day, hour, minute, second, millisecond);
     }
 

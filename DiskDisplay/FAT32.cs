@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.IO.Pipes;
 using System.Linq;
+using System.Xml.Linq;
 
 class FAT32 : FileSystem
 {
@@ -18,7 +19,7 @@ class FAT32 : FileSystem
     public UInt32 SectorPerFAT;
     public UInt32 StartingClusterOfRDET;
     public string FATType;
-
+    private int SeedId = 0;
 
 
     //--------------------------------------------------------------
@@ -61,7 +62,8 @@ class FAT32 : FileSystem
         {
             string result = "";
             File temp = (File)file;
-            if (!temp.MainName.EndsWith(".txt") || temp.ExtendedName != "TXT")
+            Console.WriteLine("-" + temp.ExtendedName + "-");
+            if (temp.ExtendedName != "TXT")
                 return "We don't support this file";
             string filename = @"\\.\" + DriveName;
             int filesize = (int)temp.FileSize;
@@ -74,7 +76,7 @@ class FAT32 : FileSystem
                     filestream.Seek(OffSetWithCluster(dataoffile[i]), SeekOrigin.Begin);
                     filestream.Read(bytes, 0, bytes.Length);
                     int length = (filesize <= bytes.Length) ? filesize : bytes.Length;
-                    result += Encoding.ASCII.GetString(bytes, 0, length);
+                    result += Encoding.UTF8.GetString(bytes, 0, length);
                     filesize -= length;
 
                 }
@@ -87,13 +89,13 @@ class FAT32 : FileSystem
     private bool ChangeFat(FileStream filestream, UInt32 Offset, List<UInt32> ListofCLuster, Int32 value)
     {
         byte[] bytes;
-        for(int i = 0; i < ListofCLuster.Count; i++ )
+        for (int i = 0; i < ListofCLuster.Count; i++)
         {
             if (value != 0x00)
                 bytes = BitConverter.GetBytes(value);
             else
             {
-                if(i == ListofCLuster.Count)
+                if (i == ListofCLuster.Count)
                     bytes = BitConverter.GetBytes(0xFFFFFFFF);
                 else
                     bytes = BitConverter.GetBytes(ListofCLuster[i]);
@@ -109,21 +111,96 @@ class FAT32 : FileSystem
     }
     public override bool DeleteFile(FileManager file)
     {
-        if (file is File && file.IsFAT32)
+        if (file.IsFAT32 == false)
+            return false;
+        string filename = @"\\.\" + DriveName;
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
         {
-            List<UInt32> ListofCluster = FindListOfClusters(file.StartCluster);
-            
+            byte[] value = { 0xE5 };
+            if(ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+                return true;
         }
-        else if (file is Directory && file.IsFAT32)
-        {
-            // Logic for Directory
-        }
+
         return false;
     }
+    private bool ChangeEntryWithValue(FileStream fileStream, FileManager file, UInt32 StartingCluter, byte[] value)
+    {
+        List<UInt32> ListOfCluster = FindListOfClusters(StartingCluter);
+        byte[] temp = new byte[32];
+        for(int i = 0; i < ListOfCluster.Count; i++)
+        {
+            Console.WriteLine("Bug roi, fix di");
+            fileStream.Seek(OffSetWithCluster(ListOfCluster[i]), SeekOrigin.Begin);
+            int total = 0;
+            while (total < SectorPerCluster * BytesPerSector)
+            {
+                fileStream.Read(temp, 0, temp.Length);
+                total += 32;
+                string name = "";
+                bool longNameFile = false;
+                int count = 1;
+                if (temp[0x0B] == 0x0F)
+                {
+                    while (temp[0x0B] == 0x0F)
+                    {
+                        string filename = "";
+                        string name1 = Encoding.Unicode.GetString(temp, 0x01, FindLengthOfName(temp, 0x01, 10));
+                        string name2 = Encoding.Unicode.GetString(temp, 0x0E, FindLengthOfName(temp, 0x0E, 12));
+                        string name3 = Encoding.Unicode.GetString(temp, 0x1C, FindLengthOfName(temp, 0x1C, 4));
 
+                        filename += name1;
+                        filename += name2;
+                        filename += name3;
+                        name = filename + name;
+                        fileStream.Read(temp, 0, temp.Length);
+                        total += 32;
+                        count++;
+                    }
+                    longNameFile = true;
+                }
+                if (!longNameFile)
+                    name = Encoding.ASCII.GetString(temp, 0, 8);
+                bool flag = false;
+                if (file == null)
+                    flag = true;
+                else if (name == file.MainName && (file is Directory || file.ExtendedName == Encoding.ASCII.GetString(temp, 0x08, 3)))
+                    flag = true;
+
+                if(flag)
+                {
+                    int backupcount = count;
+                    while (count > 0)
+                    {
+                        fileStream.Seek(-32, SeekOrigin.Current);
+                        fileStream.Write(value, 0, 1);
+                        fileStream.Seek(-1, SeekOrigin.Current);
+                        count--;
+                    }
+                    fileStream.Seek(32 * backupcount, SeekOrigin.Current);
+                }
+                if (!CheckBitAt(temp[0x0B], 5) && CheckBitAt(temp[0x0B], 4) && !CheckBitAt(temp[0x0B], 1) && !name.Contains(".       ") && !name.Contains("..      "))
+                {
+                    UInt16 s = BitConverter.ToUInt16(temp, 0x1A);
+                    long CurrentOffset = fileStream.Position;
+                    bool HasDelete = false;
+                    if (flag) // change it's children
+                        HasDelete = ChangeEntryWithValue(fileStream, null, s, value);
+                    else // find in it's children
+                        HasDelete = ChangeEntryWithValue(fileStream, file, s, value);
+                    if (HasDelete && file != null)
+                        return true;
+                    fileStream.Seek(CurrentOffset, SeekOrigin.Begin);
+                }
+                if (flag && file != null)
+                    return true;
+            }
+
+        }
+
+        return false;
+    }
     public override bool RestoreFile(FileManager file)
     {
-        // tu tu
         return true;
     }
 
@@ -163,9 +240,19 @@ class FAT32 : FileSystem
     }
 
     // This function will determie if This File is Archive
-    private bool IsArchive(byte data)
+    //private bool IsArchive(byte data)
+    //{
+    //    byte mask = (byte)(1 << 5);
+    //    // check if Archive bit(bit 5) is 1
+    //    if ((data & mask) != 0)
+    //    {
+    //        return true;
+    //    }
+    //    return false;
+    //}
+    private bool CheckBitAt(byte data, int k)
     {
-        byte mask = (byte)(1 << 5);
+        byte mask = (byte)(1 << k);
         // check if Archive bit(bit 5) is 1
         if ((data & mask) != 0)
         {
@@ -185,11 +272,12 @@ class FAT32 : FileSystem
         return maxlength;
     }
 
+
     // This Function will Read all FIle in RDET and SDET and return list of FileManager
     public void ReadDET(FileStream fileStream, UInt32 StartingCluster, ref List<FileManager> FileRoot)
     {
         List<UInt32> ListofCluster = FindListOfClusters(StartingCluster);
-        Queue<byte[]> EntryQueue = new Queue<byte[]>();
+        List<byte[]> EntryQueue = new List<byte[]>();
 
         for (int i = 0; i < ListofCluster.Count; i++)
         {
@@ -200,31 +288,45 @@ class FAT32 : FileSystem
                 byte[] buffer = new byte[32];
                 Count += 32;
                 fileStream.Read(buffer, 0, 32);
-                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 )
+                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 || (CheckBitAt(buffer[0x0B], 1) && buffer[0x0B] != 0x0F))
+                {
+                    while((EntryQueue.Count > 0))
+                    {
+                        if (EntryQueue[EntryQueue.Count - 1][0x0B] != 0x0F)
+                            break;
+                        EntryQueue.RemoveAt(EntryQueue.Count - 1);
+                    }
                     continue;
-                EntryQueue.Enqueue(buffer);
+                }
+                EntryQueue.Add(buffer);
             }
         }
-
         while (EntryQueue.Count > 0)
         {
-            byte[] temp = EntryQueue.Dequeue();
-
+            byte[] temp = EntryQueue[0];
+            EntryQueue.RemoveAt(0);
             if (temp[0x0B] == 0x0F)
-            { 
-                if (temp[0x00] == 0xE5) RecycleBin.Add(ProcessLongName(fileStream, ref EntryQueue, temp));
-                FileRoot.Add(ProcessLongName(fileStream, ref EntryQueue, temp));
+            {
+                FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp);
+                if (tempfile.MainName == "." || tempfile.MainName == "..")
+                    continue;
+                if (temp[0x00] == 0xE5) RecycleBin.Add(tempfile);
+                else FileRoot.Add(tempfile);
             }
             else
             {
-                if(temp[0x00] == 0xE5) RecycleBin.Add(ProcessShortName(fileStream, temp));
-                FileRoot.Add(ProcessShortName(fileStream, temp));
+                FileManager tempfile = ProcessShortName(fileStream, temp);
+                if (tempfile.MainName == "." || tempfile.MainName == "..")
+                    continue;
+                if (temp[0x00] == 0xE5) RecycleBin.Add(tempfile);
+                else FileRoot.Add(tempfile);
             }
+
         }
 
     }
-   
-    private FileManager ProcessLongName(FileStream fileStream, ref Queue<byte[]> EntryQueue, byte[] temp)
+
+    private FileManager ProcessLongName(FileStream fileStream, ref List<byte[]> EntryQueue, byte[] temp)
     {
         List<string> filenamefragment = new List<string>();
         while (true)
@@ -240,7 +342,8 @@ class FAT32 : FileSystem
             filename += name2;
             filename += name3;
             filenamefragment.Add(filename);
-             temp = EntryQueue.Dequeue();
+            temp = EntryQueue[0];
+            EntryQueue.RemoveAt(0);
         }
         FileManager tempfile = ProcessShortName(fileStream, temp);
         tempfile.MainName = "";
@@ -253,7 +356,7 @@ class FAT32 : FileSystem
     }
     private FileManager ProcessShortName(FileStream fileStream, byte[] temp)
     {
-        if (IsArchive(temp[0x0B]))
+        if (CheckBitAt(temp[0x0B], 5))
         {
             File tempfile = new File();
             tempfile.CloneData(temp);
@@ -287,10 +390,9 @@ class FAT32 : FileSystem
             result.Add(CurrentCluster);
 
             if (
-                FATTable[(int)CurrentCluster] == 0xFFFFFFFF 
-                || FATTable[(int)CurrentCluster] == 0x0FFFFFFF 
-                || FATTable[(int)CurrentCluster] == 0xF7FFFFFF 
-                || FATTable[(int)CurrentCluster] == 0xF8FFFF0F
+                FATTable[(int)CurrentCluster] == 0xFFFFFFFF
+                || FATTable[(int)CurrentCluster] == 0x0FFFFFFF
+                || FATTable[(int)CurrentCluster] == 0xF7FFFFFF
                 || FATTable[(int)CurrentCluster] == 0x0FFFFFF8)
             {
                 break;

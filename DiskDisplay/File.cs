@@ -3,24 +3,10 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-//class FATFile : FATFileManager
-//{
-//    public string ExtendedName;
-//    public FATFile() { }
-
-//    ~FATFile() { }
-//}
-
-//class NTFSFile : NTFSFileManager
-//{
-//    public NTFSFile() { }
-//}
-
 class File : FileManager
 {
-    public string ExtendedName;
     public File() {
-        ExtendedName = "";
+        // ExtendedName = "";
     }
     public override int GetSize() { return (int)FileSize; }
 
@@ -40,7 +26,7 @@ class File : FileManager
     {
         for (int i = 0; i < level; i++)
             Console.Write("\t");
-        Console.WriteLine("**" + MainName  + "--" + FileSize + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
+        Console.WriteLine("**" + MainName  +"--" +ExtendedName +"--" + FileSize + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
     }
     public override void Populate()
     {
