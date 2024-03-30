@@ -15,18 +15,20 @@ namespace DiskDisplay
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
+            /*Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new Form1());*/
 
-            FileSystem ntfs = new NTFS("E:");
+            FileSystem fat = new FAT32("E:");
             List<FileManager> files = new List<FileManager>();
-            files = ntfs.ReadFileSystem();
+            files = fat.ReadFileSystem();
 
-            for (int i = 0; i < files.Count; i++)
+            for (int i = 0; i < FileSystem.RecycleBin.Count; i++)
             {
-                files[i].PrintImfomations(0);
+                FileSystem.RecycleBin[i].PrintImfomations(0);
             }
+
         }
     }
 }
+

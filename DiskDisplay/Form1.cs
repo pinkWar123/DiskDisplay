@@ -17,33 +17,42 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
+        private FAT32 fat32 = new FAT32("E:");
+        private NTFS ntfs = new NTFS("Y:");
         private bool IsUserInteraction = false;
         public Form1()
         {
             InitializeComponent();
-            NTFS ntfs = new NTFS("E:");
             List<FileManager> files = new List<FileManager>();
             files = ntfs.ReadFileSystem();
+            
+            List<FileManager> fat32Files = new List<FileManager>();
+            fat32Files = fat32.ReadFileSystem();
 
             var RootFolder = new Directory() ;
-            RootFolder.Children = files;
+            RootFolder.Children = fat32Files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
-            RootFolder.Populate();
-            
-            /*var RootFolder1 = new NTFSDirectory();
-            RootFolder1.Children = files;*/
-            /*foreach (var folder in RootFolder.Children)
-            {
-                folderTree.Nodes.Add(folder.GetNode());
-                listView1.Items.Add(folder.GetListViewItem());
-            }*/
-            foreach (var folder in files)
+            RootFolder.SetItemText("F:");
+            RootFolder.SetNodeText("F:");
+
+            var RootFolder1 = new Directory();
+            RootFolder1.Children = files;
+            RootFolder1.SetItemText("G:");
+            RootFolder1.SetNodeText("G:");
+
+
+
+            var SystemFolder = new Directory() ;
+            SystemFolder.Children.Add(RootFolder);
+            SystemFolder.Children.Add(RootFolder1);
+            SystemFolder.Populate();
+            foreach (var folder in SystemFolder.Children)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
             }
-            FileListView.History.Add(RootFolder);
+            FileListView.History.Add(SystemFolder);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -67,7 +76,7 @@ namespace DiskDisplay
                 if (selecteditem.Tag is File)
                 {
                     var selectedFile = selecteditem.Tag as File;
-                    MessageBox.Show(selectedFile.MainName);
+                    MessageBox.Show(selectedFile.content_President);
                 }
                 else if (selecteditem.Tag is Directory )
                 {
@@ -85,21 +94,14 @@ namespace DiskDisplay
                     }
                     else
                     {
-                        if (selectedFolder == FileListView.History[FileListView.CurrentHistoryIndex + 1])
+                        if (selectedFolder != FileListView.History[FileListView.CurrentHistoryIndex + 1])
                         {
-                            Console.WriteLine("Here1");
-
-                            ++FileListView.CurrentHistoryIndex;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Here");
                             int startIndex = FileListView.CurrentHistoryIndex + 1;
                             int count = FileListView.History.Count - startIndex;
                             FileListView.History.RemoveRange(startIndex, count);
                             FileListView.History.Add(selectedFolder);
-                            ++FileListView.CurrentHistoryIndex;
                         }
+                            ++FileListView.CurrentHistoryIndex;
                     }
                     FileListView.RenderListView(ref listView1);
 
@@ -152,18 +154,51 @@ namespace DiskDisplay
 
         }
 
+        private void listView1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                rightClicked = true;
+            }
+            else
+            {
+                rightClicked = false;
+            }
+        }
+        bool rightClicked = false;
+        private void listView1_MouseUp(object sender, MouseEventArgs e)
+        {
+            rightClicked = false;
+            if (e.Button == MouseButtons.Right)
+            {
+                ListViewHitTestInfo hitTestInfo = listView1.HitTest(e.X, e.Y);
+                if (hitTestInfo.Item != null)
+                {
+                    contextMenuStrip1.Show(listView1, e.Location);
+                }
+            }
+        }
         private void listView1_SelectedIndexChanged_2(object sender, EventArgs e)
         {
+            if(rightClicked)
+            {
+                listView1.SelectedItems.Clear();
+                return;
+            }
+            if(e is MouseEventArgs)
+            {
+                var _e = e as MouseEventArgs;
+                if (_e.Button == MouseButtons.Right) return;
+            }
             ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
             if (selecteditem != null)
             {
-                // Your logic here
-                // Do something with the selected item
                 if (selecteditem.Tag is File)
                 {
                     var selectedFile = selecteditem.Tag as File;
-                    MessageBox.Show(selectedFile.MainName);
-
+                    
+                    FileWindow f2 = new FileWindow();
+                    f2.ShowFileContent(ntfs.ReadData(selectedFile));
                 }
                 else if (selecteditem.Tag is Directory)
                 {
@@ -202,6 +237,6 @@ namespace DiskDisplay
             }
         }
 
-       
+        
     }
 }

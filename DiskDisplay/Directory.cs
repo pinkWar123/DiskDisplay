@@ -75,7 +75,6 @@ class Directory : FileManager
         if (FileListView.IsLastDirectory())
         {
             ++FileListView.CurrentHistoryIndex;
-            Console.Write("a");
             FileListView.History.Add(this);
         }
         else
@@ -102,7 +101,8 @@ class Directory : FileManager
         CurrentNode.Tag = this;
 
         CurrentNode.Text = MainName;
-        foreach (var child in Children)
+        if(Children!= null)
+            foreach (var child in Children)
         {
             TreeNode node = new TreeNode();
             child.SetNode(node);
@@ -118,3 +118,4 @@ class Directory : FileManager
 
     }
 }
+

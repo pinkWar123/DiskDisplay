@@ -5,6 +5,8 @@ using System.Text;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.IO.Pipes;
+using System.Linq;
+
 class FAT32 : FileSystem
 {
     // This area is used for Boost_Sector's Variables
@@ -200,11 +202,6 @@ class FAT32 : FileSystem
                 fileStream.Read(buffer, 0, 32);
                 if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 )
                     continue;
-                if (buffer[0] == 0xE5)
-                {
-                    // ADD logic later -- restore file
-                    continue;
-                }
                 EntryQueue.Enqueue(buffer);
             }
         }
@@ -214,16 +211,19 @@ class FAT32 : FileSystem
             byte[] temp = EntryQueue.Dequeue();
 
             if (temp[0x0B] == 0x0F)
-            {
+            { 
+                if (temp[0x00] == 0xE5) RecycleBin.Add(ProcessLongName(fileStream, ref EntryQueue, temp));
                 FileRoot.Add(ProcessLongName(fileStream, ref EntryQueue, temp));
             }
             else
             {
+                if(temp[0x00] == 0xE5) RecycleBin.Add(ProcessShortName(fileStream, temp));
                 FileRoot.Add(ProcessShortName(fileStream, temp));
             }
         }
 
     }
+   
     private FileManager ProcessLongName(FileStream fileStream, ref Queue<byte[]> EntryQueue, byte[] temp)
     {
         List<string> filenamefragment = new List<string>();
@@ -240,7 +240,7 @@ class FAT32 : FileSystem
             filename += name2;
             filename += name3;
             filenamefragment.Add(filename);
-            temp = EntryQueue.Dequeue();
+             temp = EntryQueue.Dequeue();
         }
         FileManager tempfile = ProcessShortName(fileStream, temp);
         tempfile.MainName = "";
@@ -286,7 +286,12 @@ class FAT32 : FileSystem
         {
             result.Add(CurrentCluster);
 
-            if (FATTable[(int)CurrentCluster] == 0xFFFFFFFF || FATTable[(int)CurrentCluster] == 0x0FFFFFFF || FATTable[(int)CurrentCluster] == 0xF7FFFFFF || FATTable[(int)CurrentCluster] == 0xF8FFFF0F)
+            if (
+                FATTable[(int)CurrentCluster] == 0xFFFFFFFF 
+                || FATTable[(int)CurrentCluster] == 0x0FFFFFFF 
+                || FATTable[(int)CurrentCluster] == 0xF7FFFFFF 
+                || FATTable[(int)CurrentCluster] == 0xF8FFFF0F
+                || FATTable[(int)CurrentCluster] == 0x0FFFFFF8)
             {
                 break;
             }

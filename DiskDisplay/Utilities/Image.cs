@@ -26,6 +26,7 @@ namespace DiskDisplay.NewFolder1
             // Load the image using the relative path
             ImageList.Images.Add("folderIcon", Image.FromFile("folder.png"));
             ImageList.Images.Add("fileIcon", Image.FromFile("file.jpg"));
+            ImageList.Images.Add("recycleBinIcon", Image.FromFile("recycle-bin.jpg"));
         }
     }
 }

@@ -29,7 +29,15 @@ class FileManager
     protected ListViewItem CurrentItem = new ListViewItem();
     public FileManager() { }
 
+    public void SetNodeText(string text)
+    {
+        CurrentNode.Text = text;
+    }
 
+    public void SetItemText(string text)
+    {
+        CurrentItem.Text = text;
+    }
     public virtual int GetSize() { return 0; }
 
     // 
