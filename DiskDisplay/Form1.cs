@@ -17,8 +17,8 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("Y:");
-        private NTFS ntfs = new NTFS("E:");
+        private FAT32 fat32 = new FAT32("E:");
+        private NTFS ntfs = new NTFS("F:");
         private bool IsUserInteraction = false;
         public Form1()
         {
@@ -54,8 +54,8 @@ namespace DiskDisplay
 
             RootFolder1.SetItemText("E:");
             RootFolder1.SetNodeText("E:");
-            RootFolder.SetItemText("Y:");
-            RootFolder.SetNodeText("Y:");
+            RootFolder.SetItemText("F:");
+            RootFolder.SetNodeText("F:");
             RecycleBin.SetItemText("Recycle Bin");
             RecycleBin.SetNodeText("Recycle Bin");
             RecycleBin.SetIcon("recycleBinIcon", 2);
@@ -194,7 +194,12 @@ namespace DiskDisplay
                     var selectedFile = selecteditem.Tag as File;
 
                     FileWindow f2 = new FileWindow();
-                    f2.ShowFileContent(ntfs.ReadData(selectedFile));
+                    string content = "";
+                    if (selectedFile.IsFAT32)
+                        content = fat32.ReadData(selectedFile);
+                    else
+                        content = ntfs.ReadData(selectedFile);
+                    f2.ShowFileContent(content);
                 }
                 else if (selecteditem.Tag is Directory)
                 {
