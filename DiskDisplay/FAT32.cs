@@ -49,7 +49,6 @@ class FAT32 : FileSystem
         {
             ReadBoostSector(filestream);
             ReadFAT1(filestream);
-
             List<FileManager> files = new List<FileManager>();
             ReadDET(filestream, StartingClusterOfRDET, ref files);
             return files;
@@ -117,8 +116,10 @@ class FAT32 : FileSystem
         using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
         {
             byte[] value = { 0xE5 };
-            if(ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            if (!ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            {
                 return true;
+            }
         }
 
         return false;
@@ -126,76 +127,102 @@ class FAT32 : FileSystem
     private bool ChangeEntryWithValue(FileStream fileStream, FileManager file, UInt32 StartingCluter, byte[] value)
     {
         List<UInt32> ListOfCluster = FindListOfClusters(StartingCluter);
-        byte[] temp = new byte[32];
-        for(int i = 0; i < ListOfCluster.Count; i++)
+        byte[] ClusterByte = new byte[0];
+        // Merge Cluster------
+        for (int i = 0; i < ListOfCluster.Count; i++)
         {
-            Console.WriteLine("Bug roi, fix di");
+            byte[] k = new byte[SectorPerCluster * BytesPerSector];
             fileStream.Seek(OffSetWithCluster(ListOfCluster[i]), SeekOrigin.Begin);
-            int total = 0;
-            while (total < SectorPerCluster * BytesPerSector)
-            {
-                fileStream.Read(temp, 0, temp.Length);
-                total += 32;
-                string name = "";
-                bool longNameFile = false;
-                int count = 1;
-                if (temp[0x0B] == 0x0F)
-                {
-                    while (temp[0x0B] == 0x0F)
-                    {
-                        string filename = "";
-                        string name1 = Encoding.Unicode.GetString(temp, 0x01, FindLengthOfName(temp, 0x01, 10));
-                        string name2 = Encoding.Unicode.GetString(temp, 0x0E, FindLengthOfName(temp, 0x0E, 12));
-                        string name3 = Encoding.Unicode.GetString(temp, 0x1C, FindLengthOfName(temp, 0x1C, 4));
-
-                        filename += name1;
-                        filename += name2;
-                        filename += name3;
-                        name = filename + name;
-                        fileStream.Read(temp, 0, temp.Length);
-                        total += 32;
-                        count++;
-                    }
-                    longNameFile = true;
-                }
-                if (!longNameFile)
-                    name = Encoding.ASCII.GetString(temp, 0, 8);
-                bool flag = false;
-                if (file == null)
-                    flag = true;
-                else if (name == file.MainName && (file is Directory || file.ExtendedName == Encoding.ASCII.GetString(temp, 0x08, 3)))
-                    flag = true;
-
-                if(flag)
-                {
-                    int backupcount = count;
-                    while (count > 0)
-                    {
-                        fileStream.Seek(-32, SeekOrigin.Current);
-                        fileStream.Write(value, 0, 1);
-                        fileStream.Seek(-1, SeekOrigin.Current);
-                        count--;
-                    }
-                    fileStream.Seek(32 * backupcount, SeekOrigin.Current);
-                }
-                if (!CheckBitAt(temp[0x0B], 5) && CheckBitAt(temp[0x0B], 4) && !CheckBitAt(temp[0x0B], 1) && !name.Contains(".       ") && !name.Contains("..      "))
-                {
-                    UInt16 s = BitConverter.ToUInt16(temp, 0x1A);
-                    long CurrentOffset = fileStream.Position;
-                    bool HasDelete = false;
-                    if (flag) // change it's children
-                        HasDelete = ChangeEntryWithValue(fileStream, null, s, value);
-                    else // find in it's children
-                        HasDelete = ChangeEntryWithValue(fileStream, file, s, value);
-                    if (HasDelete && file != null)
-                        return true;
-                    fileStream.Seek(CurrentOffset, SeekOrigin.Begin);
-                }
-                if (flag && file != null)
-                    return true;
-            }
-
+            fileStream.Read(k, 0, k.Length);
+            ClusterByte = ClusterByte.Concat(k).ToArray();
         }
+
+        //--------------
+        byte[] temp = new byte[32];
+
+        int total = 0;
+        while (total < SectorPerCluster * BytesPerSector * ListOfCluster.Count)
+        {
+            Array.Copy(ClusterByte, total, temp, 0, 32);
+            total += 32;
+            if (temp[0x00] == 0x00)
+                continue;
+
+            string name = "";
+            bool longNameFile = false;
+            int count = 1;
+            if (temp[0x0B] == 0x0F)
+            {
+                while (temp[0x0B] == 0x0F)
+                {
+                    string filename = "";
+                    string name1 = Encoding.Unicode.GetString(temp, 0x01, FindLengthOfName(temp, 0x01, 10));
+                    string name2 = Encoding.Unicode.GetString(temp, 0x0E, FindLengthOfName(temp, 0x0E, 12));
+                    string name3 = Encoding.Unicode.GetString(temp, 0x1C, FindLengthOfName(temp, 0x1C, 4));
+
+                    filename += name1;
+                    filename += name2;
+                    filename += name3;
+                    name = filename + name;
+                    Array.Copy(ClusterByte, total, temp, 0, 32);
+                    total += 32;
+                    count++;
+                }
+                longNameFile = true;
+            }
+            if (!longNameFile)
+                name = Encoding.ASCII.GetString(temp, 0, 8);
+            bool flag = false;
+            if (file == null)
+                flag = true;
+            else if (name == file.MainName && (file is Directory || file.ExtendedName == Encoding.ASCII.GetString(temp, 0x08, 3))
+                                           && BitConverter.ToUInt16(temp, 0x1A) == file.StartCluster)
+                flag = true;
+
+            if (flag)
+            {
+                int backuptotal = total;
+                while (count > 0)
+                {
+                    total -= 32;
+                    ClusterByte[total] = value[0];
+                    count--;
+                }
+                total = backuptotal;
+            }
+            //Check if it is a Directory --> Change in its children
+            if (!CheckBitAt(temp[0x0B], 5) && CheckBitAt(temp[0x0B], 4) && !CheckBitAt(temp[0x0B], 1) && !name.Contains(".       ") && !name.Contains("..      "))
+            {
+                UInt16 s = BitConverter.ToUInt16(temp, 0x1A);
+                bool HasDelete = false;
+                if (flag)
+                    HasDelete = ChangeEntryWithValue(fileStream, null, s, value);
+                else // find in it's children
+                    HasDelete = ChangeEntryWithValue(fileStream, file, s, value);
+                if (HasDelete)
+                    flag = true;
+
+            }
+            if (flag && file != null)
+            {
+                for (int i = 0; i < ListOfCluster.Count; i++)
+                {
+                    fileStream.Seek(OffSetWithCluster(ListOfCluster[i]), SeekOrigin.Begin);
+                    fileStream.Write(ClusterByte, i * SectorPerCluster * BytesPerSector, SectorPerCluster * BytesPerSector);
+                }
+                return true;
+            }
+        }
+        if (file == null)
+        {
+            for (int i = 0; i < ListOfCluster.Count; i++)
+            {
+                fileStream.Seek(OffSetWithCluster(ListOfCluster[i]), SeekOrigin.Begin);
+                fileStream.Write(ClusterByte, i * SectorPerCluster * BytesPerSector, SectorPerCluster * BytesPerSector);
+            }
+            return true;
+        }
+
 
         return false;
     }
@@ -288,9 +315,10 @@ class FAT32 : FileSystem
                 byte[] buffer = new byte[32];
                 Count += 32;
                 fileStream.Read(buffer, 0, 32);
-                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 || (CheckBitAt(buffer[0x0B], 1) && buffer[0x0B] != 0x0F))
+                if (buffer[0] == 0x00 || buffer[0] == 0x05 || buffer[0x0B] == 0x08 ||
+                    (CheckBitAt(buffer[0x0B], 1) && buffer[0x0B] != 0x0F) || BitConverter.ToUInt16(buffer, 0x1A) == StartingCluster)
                 {
-                    while((EntryQueue.Count > 0))
+                    while ((EntryQueue.Count > 0))
                     {
                         if (EntryQueue[EntryQueue.Count - 1][0x0B] != 0x0F)
                             break;
