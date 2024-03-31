@@ -23,17 +23,17 @@ namespace DiskDisplay
             List<FileManager> files = new List<FileManager>();
             files = fat.ReadFileSystem();
 
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                files[i].PrintImfomations(0);
+            }
             for (int i = 0; i < FileSystem.RecycleBin.Count; i++)
             {
                 FileSystem.RecycleBin[i].PrintImfomations(0);
             }
 
-            //for(int i = 0; i < files.Count; i++)
-            //{
-            //    files[i].PrintImfomations(0);
-            //}
-
-            //fat.DeleteFile(files[1]);
+            //fat.DeleteFile(files[2]);
         }
     }
 }

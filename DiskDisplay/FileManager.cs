@@ -84,7 +84,7 @@ class FileManager
     {
         for (int i = 0; i < level; i++)
             Console.Write("\t");
-        Console.WriteLine("**" + MainName + "--" + FileSize + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
+        Console.WriteLine("**" + ID + "--" + RootID + "--" + MainName + "--" + FileSize + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
     }
 
     virtual public bool FindFather(FileManager temp)
@@ -108,7 +108,7 @@ class FileManager
         int month = (date & 0x01E0) >> 5;
         int day = date & 0x001F;
 
-        
+
         return new DateTime(year, month, day, hour, minute, second, millisecond);
     }
 
@@ -133,18 +133,18 @@ class FileManager
 //{
 //    public FATFileManager() { }
 
-    
 
-    
+
+
 //}
 
 //class NTFSFileManager : FileManager
 //{
-    
+
 
 //    public NTFSFileManager() { }
-    
-    
-    
-    
+
+
+
+
 //}

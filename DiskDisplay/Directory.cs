@@ -62,7 +62,7 @@ class Directory : FileManager
         {
             Console.Write("\t");
         }
-        Console.WriteLine(MainName + "--" + GetSize() + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
+        Console.WriteLine(ID + "--" + RootID + "--" + MainName + "--" + GetSize() + "--" + Creationdatetime.Day + "/" + Creationdatetime.Month + "/" + Creationdatetime.Year + "-" + Creationdatetime.Hour + ":" + Creationdatetime.Minute + ":" + Creationdatetime.Second);
         for (int i = 0; i < Children.Count; i++)
         {
             Children[i].PrintImfomations(level + 1);
