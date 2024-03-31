@@ -46,9 +46,13 @@ class FAT32 : FileSystem
         string filename = @"\\.\" + DriveName;
         using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
         {
+            filestream.Seek(0, SeekOrigin.Begin);
+
+        }
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+        {
             ReadBoostSector(filestream);
             ReadFAT1(filestream);
-
             List<FileManager> files = new List<FileManager>();
             ReadDET(filestream, StartingClusterOfRDET, ref files);
             return files;
