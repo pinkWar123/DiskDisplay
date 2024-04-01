@@ -20,7 +20,7 @@ class FAT32 : FileSystem
     public UInt32 StartingClusterOfRDET;
     public string FATType;
     private UInt32 SeedId = 0x05;
-    Dictionary<UInt32, List<byte>> StartingCLuter_FirstByteEntry = new Dictionary<UInt32, List<byte>>(); 
+    Dictionary<UInt16, List<byte>> StartingCLuter_FirstByteEntry = new Dictionary<UInt16, List<byte>>(); 
 
     //--------------------------------------------------------------
 
@@ -208,7 +208,7 @@ class FAT32 : FileSystem
                     }
                     else
                     {
-                        if(name.Contains(".      ") || name.Contains("       "))
+                        if(name.Contains(".       ") || name.Contains("       "))
                             ClusterByte[total] = 0x2E;
                         else
                         {
@@ -272,17 +272,25 @@ class FAT32 : FileSystem
     }
     public override bool RestoreFile(FileManager file)
     {
-        if (file.IsFAT32 == false)
-            return false;
-        string filename = @"\\.\" + DriveName;
-        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        try
         {
-            byte[] value = { 0x48 };
-            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, false))
+            if (file.IsFAT32 == false)
+                return false;
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
-                return true;
+                byte[] value = { 0x48 };
+                if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, false))
+                {
+                    return true;
+                }
             }
         }
+        catch (Exception ex)
+        {
+            return false;
+        }
+        
 
         return false;
     }
