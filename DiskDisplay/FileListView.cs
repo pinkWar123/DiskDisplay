@@ -16,13 +16,14 @@ namespace DiskDisplay
         public static void RenderListView(ref ListView listView)
         {
             if (IsCurrentlyProcessing) return;
-            
+
             IsCurrentlyProcessing = true;
             listView.Items.Clear();
-            Console.WriteLine(History.Count);
+            Console.WriteLine("Current index: " + FileListView.CurrentHistoryIndex);
+            Console.WriteLine("History length: " + FileListView.History.Count);
+            if (History[CurrentHistoryIndex].Children != null)
             foreach (var child in History[CurrentHistoryIndex].Children)
             {
-                Console.Write("b");
                 listView.Items.Add(child.GetListViewItem());
             }
 

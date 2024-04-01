@@ -19,27 +19,22 @@ namespace DiskDisplay
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
 
-            NTFS ntfs = new NTFS();
+            /*FileSystem fat = new FAT32("F:");
             List<FileManager> files = new List<FileManager>();
-            using (FileStream fileStream = new FileStream(@"\\.\E:", FileMode.Open, FileAccess.Read))
-            {
-                ntfs.ReadVBR(fileStream);
-                Console.WriteLine("Byte Per Sector: " + ntfs.BytePerSector);
-                Console.WriteLine("Sector Per Cluster: " + ntfs.SectorPerCluster);
-                Console.WriteLine("Sector per track: " + ntfs.SectorPerTrack);
-                Console.WriteLine("Number Of Head: " + ntfs.NumberOfHead);
-                Console.WriteLine("Total Sector: " + ntfs.TotalSector);
-                Console.WriteLine("Starting Cluster of MFT: " + ntfs.StartingClusterOfMFT);
-                Console.WriteLine("Starting Cluster of Back up MFT: " + ntfs.StartingClusterOfBackupMFT);
-                Console.WriteLine("Byte per entry " + ntfs.BytePerEntry);
-                ntfs.ReadMFT(fileStream, ref files);
+            files = fat.ReadFileSystem();
 
-            }
-            Console.WriteLine(files.Count);
+
             for (int i = 0; i < files.Count; i++)
             {
                 files[i].PrintImfomations(0);
             }
+            for (int i = 0; i < FileSystem.RecycleBin.Count; i++)
+            {
+                FileSystem.RecycleBin[i].PrintImfomations(0);
+            }*/
+
+            //fat.DeleteFile(files[2]);
         }
     }
 }
+

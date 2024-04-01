@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-class NTFS
+class NTFS : FileSystem
 {
     public UInt16 BytePerSector;
     public byte SectorPerCluster;
@@ -17,13 +17,74 @@ class NTFS
     public UInt32 BytePerEntry;
 
     public NTFS() { }
+    public NTFS(string drive) {
+        this.DriveName = drive;
+    }
 
-    public List<FileManager> ReadFile(string file)
+    public override List<FileManager> ReadFileSystem()
     {
-        // Add code here
-        List<FileManager> files = new List<FileManager>();
+        try
+        {
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                ReadVBR(filestream);
+                List<FileManager> files = new List<FileManager>();
+                ReadMFT(filestream, ref files);
+                return files;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+        }
+        return null;
+    }
 
-        return files;
+    public override string ReadData(FileManager file)
+    {
+        if (file is File && file.IsFAT32 == false)
+        {
+            File tempfile = (File)file;
+            if(tempfile.MainName.EndsWith(".txt"))
+            {
+                if (tempfile.IsNon_Resident == false)
+                    return tempfile.content_President;
+
+                string result = "";
+                string filename = @"\\.\" + DriveName;
+                Int32 size = (Int32)tempfile.FileSize;
+                using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+                {
+                    byte[] data = new byte[BytePerSector * SectorPerCluster];
+                    Int64 Offset = OffsetWithCluster((UInt64)(tempfile.StartCluster));
+                    filestream.Seek(Offset, SeekOrigin.Begin);
+                    while(size > 0)
+                    {
+                        filestream.Read(data, 0, (int)BytePerSector * SectorPerCluster);
+                        result += Encoding.ASCII.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
+                        size -= data.Length;
+                    }
+                }
+                return result;
+            }
+            return "We dont't Support this type file\n";
+            
+        }
+        
+        return "Wrong File";
+    }
+
+    public override bool DeleteFile(FileManager file)
+    {
+        // tu tu
+        return true;
+    }
+
+    public override bool RestoreFile(FileManager file)
+    {
+        // tu tu
+        return true;
     }
 
     public void ReadVBR(FileStream fileStream)
@@ -54,17 +115,16 @@ class NTFS
     public void ReadMFT(FileStream fileStream, ref List<FileManager> files)
     {
         byte[] MFTBytes = new byte[BytePerEntry];
-        //byte[] MFTBytes = new byte[1024];
 
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024 , SeekOrigin.Begin);
         int count = 0;
         //FileManager temp = new FileManager();
-        List<NTFSFileManager > OrphanedFile = new List<NTFSFileManager>();
+        List<FileManager > OrphanedFile = new List<FileManager>();
         while(count++ < 200)
         {
             fileStream.Read(MFTBytes, 0, MFTBytes.Length);
 
-            NTFSFileManager temp = MFTEntry.MFTEntryProcess(MFTBytes);
+            FileManager temp = MFTEntry.MFTEntryProcess(MFTBytes);
             if(temp != null)
             {
                 if(temp.RootID != 0x05)
@@ -73,7 +133,7 @@ class NTFS
                     {
                         if (OrphanedFile[i].RootID == temp.ID)
                         {
-                            NTFSDirectory dir = (NTFSDirectory)temp;
+                            Directory dir = (Directory)temp;
                             dir.Children.Add(OrphanedFile[i]);
                             OrphanedFile.RemoveAt(i);
                             --i;
@@ -83,7 +143,7 @@ class NTFS
                     bool Orphanedflag = true;
                     for(int i = 0; i < files.Count; i++)
                     {
-                        NTFSFileManager tempfile = (NTFSFileManager)files[i];
+                        FileManager tempfile = (FileManager)files[i];
                         if(tempfile.FindFather(temp) == true)
                             Orphanedflag = false;
                     }
@@ -108,23 +168,28 @@ class NTFS
 
 static class MFTEntry
 {
-    /*private static bool IsCorrectFile(byte[] entry)
-    {
-        return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
-    }*/
+    
     private static bool IsCorrectFile(byte[] entry)
     {
-        if (entry.Length < 4)
-        {
-            // Handle the case where the array is not long enough
-            return false;
-        }
 
-        // Check the conditions using appropriate array index and length
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
     }
+    static private UInt64 GetNumberWithKByte(byte[] entry, UInt32 Offset, int k)
+    {
+        byte[] temp = new byte[8];
 
-    public static NTFSFileManager MFTEntryProcess(byte[] entry)
+        for (int i = 0; i < k; i++)
+        {
+            temp[i] = entry[Offset + i];
+        }
+        for(int i = k; i < 8; i++)
+        {
+            temp[i] = 0x00;
+        }
+
+        return BitConverter.ToUInt64(temp, 0);
+    }
+    public static FileManager MFTEntryProcess(byte[] entry)
     {
 
         if(!IsCorrectFile(entry))
@@ -143,7 +208,12 @@ static class MFTEntry
         UInt64 RootID = 0;
         UInt32 SizeOfContent = 0;
         UInt16 ContentOffset = 0;
+        byte IsNon_Resident = 0x00;
         string filename = "";
+        string content = "";
+
+        UInt32 StartingClusterOfContent = 0;
+        UInt32 NumberOfContigousCluster = 0;
 
         // Read Attribute-------------------------------
         while (AttributeOffset <= 1024)
@@ -153,16 +223,16 @@ static class MFTEntry
                 break;
             
             UInt32 AttributeSize = BitConverter.ToUInt32(entry, AttributeOffset + 0x04);
-            byte IsNon_Resident = entry[AttributeOffset + 0x08];
+            IsNon_Resident = entry[AttributeOffset + 0x08];
             ContentOffset = BitConverter.ToUInt16(entry, AttributeOffset + 0x14);
-
             if (IsNon_Resident == 0x00)
             {
-                SizeOfContent = BitConverter.ToUInt32(entry, AttributeOffset + 0x10);     
+                SizeOfContent = BitConverter.ToUInt32(entry, AttributeOffset + 0x10);
             }
             else if(IsNon_Resident == 0x01)
             {
                 SizeOfContent = BitConverter.ToUInt32(entry, AttributeOffset + 0x30);
+                ContentOffset = BitConverter.ToUInt16(entry, AttributeOffset + 0x20);
             }
 
             if(AttributeType == 0x10)
@@ -171,14 +241,8 @@ static class MFTEntry
                 Modifiedtime = DateTimeWithNanoSecond(entry, AttributeOffset + ContentOffset + 0x08);
             }
             else if(AttributeType == 0x30) {
-                byte[] temp = new byte[8];
-                
-                for(int i = 0; i < 6; i++)
-                {
-                    temp[i] = entry[AttributeOffset + ContentOffset + i];
-                }
-                temp[6] = temp[7] =  0x00;
-                RootID = BitConverter.ToUInt64(temp, 0);
+
+                RootID = GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset, 6);
                 filename = Encoding.Unicode.GetString(entry,AttributeOffset + ContentOffset + 0x42, 2*entry[AttributeOffset + ContentOffset + 0x40]);
                 
                 if (filename[0] == '$' || filename.Length == 0)
@@ -186,7 +250,25 @@ static class MFTEntry
             }
             else if(AttributeType == 0x80)
             {
-                FileSize += SizeOfContent; // File = Size OF Content
+                FileSize += SizeOfContent;
+                if(filename.EndsWith(".txt"))
+                {
+                    if (IsNon_Resident == 0x00)
+                    {
+                        content = Encoding.ASCII.GetString(entry, AttributeOffset + ContentOffset, (int)SizeOfContent);
+                    }
+                    else if (IsNon_Resident == 0x01)
+                    {
+                        // Read Runlist
+                        byte firstdatarun = entry[AttributeOffset + ContentOffset];
+                        byte firstFourBytes = (byte)(firstdatarun >> 4);
+                        byte lastFourBytes = (byte)(firstdatarun & 0b00001111);
+                        
+                        StartingClusterOfContent = (UInt32)GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset + lastFourBytes + 1, firstFourBytes);       
+                        NumberOfContigousCluster = (UInt32)GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset + 1, lastFourBytes);
+                    }
+                }
+                
             }
             AttributeOffset += (UInt16)AttributeSize;
         }
@@ -194,14 +276,14 @@ static class MFTEntry
 
         if(status == 0x01) // File
         {
-            NTFSFile result = new NTFSFile();
-            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime);
+            File result = new File();
+            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
             return result;
         }
         else
         {
-            NTFSDirectory result = new NTFSDirectory();
-            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime);
+            Directory result = new Directory();
+            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident,  content);
             return result;
         }
     }
