@@ -41,6 +41,51 @@ class NTFS : FileSystem
         return null;
     }
 
+    public override bool DeleteFile(FileManager file)
+    {
+        try
+        {
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+            {
+                filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
+                int count = 0;
+                while (count++ < 200)
+                {
+                    Console.WriteLine(count);
+                    byte[] MFTBytes = new byte[BytePerEntry];
+                    filestream.Read(MFTBytes, 0, MFTBytes.Length);
+
+                    FileManager temp = MFTEntry.MFTEntryProcess(MFTBytes);
+                    if (temp != null)
+                    {
+                        if (temp.ID == file.ID)
+                        {
+                            for (int i = 0x16; i < 0x18; i++)
+                            {
+                                MFTBytes[i] = 0x00;
+                            }
+                            filestream.Seek(-MFTBytes.Length, SeekOrigin.Current);
+
+                            // Write the modified MFT entry back to the file
+                            filestream.Write(MFTBytes, 0, MFTBytes.Length);
+
+                            // Exit the loop since the modification is done
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file: {ex.Message}");
+            return false;
+        }
+    }
+
     public override string ReadData(FileManager file)
     {
         if (file is File && file.IsFAT32 == false)
@@ -75,30 +120,7 @@ class NTFS : FileSystem
         return "Wrong File";
     }
 
-    public override bool DeleteFile(FileManager file)
-    {
-        try
-        {
-            string filename = @"\\.\" + DriveName;
-            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
-            {
-                // Calculate the offset of the MFT entry for the file to be deleted
-                ulong mftEntryOffset = CalculateMFTEntryOffset(file.ExtendedName, StartingClusterOfMFT, BytePerEntry);
-
-                // Mark the MFT entry as unused or set appropriate flags to indicate deletion
-                byte[] deletedFlag = { 0xE5 };
-                filestream.Seek((long)mftEntryOffset, SeekOrigin.Begin);
-                filestream.Write(deletedFlag, 0, 1);
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deleting file: {ex.Message}");
-            return false;
-        }
-    }
-
+    
     public override bool RestoreFile(FileManager file)
     {
         // tu tu

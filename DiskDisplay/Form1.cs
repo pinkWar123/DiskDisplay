@@ -331,7 +331,7 @@ namespace DiskDisplay
                     MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             }
-            /*else
+            else
             {
                 if (ntfs.DeleteFile(item))
                 {
@@ -345,7 +345,7 @@ namespace DiskDisplay
                 }
                 else
                     MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }*/
+            }
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)

@@ -227,7 +227,7 @@ class FAT32 : FileSystem
                     }
                     index++;
                 }
-                if(!StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)))
+                if(!StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)) && isDelete)
                     StartingCLuter_FirstByteEntry.Add(BitConverter.ToUInt16(temp, 0x1A), FirstByteOfEntry);
                 total = backuptotal;
             }
@@ -288,6 +288,7 @@ class FAT32 : FileSystem
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex.ToString());
             return false;
         }
         
@@ -330,17 +331,6 @@ class FAT32 : FileSystem
         }
     }
 
-    // This function will determie if This File is Archive
-    //private bool IsArchive(byte data)
-    //{
-    //    byte mask = (byte)(1 << 5);
-    //    // check if Archive bit(bit 5) is 1
-    //    if ((data & mask) != 0)
-    //    {
-    //        return true;
-    //    }
-    //    return false;
-    //}
     private bool CheckBitAt(byte data, int k)
     {
         byte mask = (byte)(1 << k);
@@ -407,13 +397,24 @@ class FAT32 : FileSystem
             if (temp[0x0B] == 0x0F)
             {
                 FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp, RootID);
-                if (temp[0x00] == 0xE5 && tempfile.RootID == 5) RecycleBin.Add(tempfile);
+                if (temp[0x00] == 0xE5)
+                {
+                    if(!tempfile.Parent.IsRecycleBin())
+                        RecycleBin.Add(tempfile);
+                }
                 else FileRoot.Add(tempfile);
             }
             else
             {
                 FileManager tempfile = ProcessShortName(fileStream, temp, RootID);
-                if (temp[0x00] == 0xE5 && tempfile.RootID == 5) RecycleBin.Add(tempfile);
+                if (temp[0x00] == 0xE5)
+                {
+                    if (temp[0x00] == 0xE5)
+                    {
+                        if (!tempfile.Parent.IsRecycleBin())
+                            RecycleBin.Add(tempfile);
+                    }
+                }
                 else FileRoot.Add(tempfile);
             }
 
