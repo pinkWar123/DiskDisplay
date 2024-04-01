@@ -13,7 +13,7 @@ class Directory : FileManager
 
     public Directory()
     {
-        Children = new List<FileManager>();
+        Parent = new FileManager();
     }
 
     // Overloading Clone function for FAT32 file
@@ -108,6 +108,7 @@ class Directory : FileManager
                 TreeNode node = new TreeNode();
                 child.SetNode(node);
                 child.Populate();
+                child.SetParent(this);
                 CurrentNode.Nodes.Add(node);
             }
 

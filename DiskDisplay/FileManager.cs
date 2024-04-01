@@ -23,12 +23,17 @@ class FileManager
     public string content_President;
     public bool IsNon_Resident;
 
-    public List<FileManager> Children;
+    public FileManager Parent;
+
+    public List<FileManager> Children = new List<FileManager>();
 
     // Properties for UI
     protected TreeNode CurrentNode = new TreeNode();
     protected ListViewItem CurrentItem = new ListViewItem();
-    public FileManager() { }
+    protected bool isRecycleBin = false;
+    public FileManager() {
+        
+    }
 
     public void SetNodeText(string text)
     {
@@ -38,6 +43,27 @@ class FileManager
     public void SetItemText(string text)
     {
         CurrentItem.Text = text;
+    }
+
+    public void SetParent(FileManager Parent)
+    {
+        this.Parent = Parent;
+    }
+
+    public FileManager GetParent()
+    {
+        return Parent;
+    }
+
+    public bool IsRecycleBin()
+    {
+        return this.isRecycleBin;
+    }
+
+    public void SetInvisible()
+    {
+        CurrentNode = null;
+        CurrentItem = null;
     }
 
     public void SetIcon(string icon, int imgIdx)
@@ -59,6 +85,7 @@ class FileManager
 
         IsFAT32 = true;
         IsDelete = false;
+        if (data[0x00] == 0xE5) isRecycleBin = true;
     }
 
     virtual public void CloneData(string filename, UInt32 FileSize, UInt32 ID, UInt32 RootID, DateTime CreationDate,

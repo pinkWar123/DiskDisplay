@@ -17,8 +17,8 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("E:");
-        private NTFS ntfs = new NTFS("F:");
+        private FAT32 fat32 = new FAT32("F:");
+        private NTFS ntfs = new NTFS("E:");
         private bool IsUserInteraction = false;
         public Form1()
         {
@@ -61,7 +61,8 @@ namespace DiskDisplay
             RecycleBin.SetIcon("recycleBinIcon", 2);
             FileListView.History.Add(SystemFolder);
 
-            
+            listView1.MouseDoubleClick += listView1_MouseDoubleClick;
+            listView1.MouseClick += listView1_MouseUp;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -73,8 +74,7 @@ namespace DiskDisplay
             listView1.Columns.Add("Size", 100);
             listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
-            listView1.MouseDoubleClick += listView1_MouseDoubleClick;
-            listView1.MouseClick += listView1_MouseUp;
+            
 
 
 
@@ -180,12 +180,23 @@ namespace DiskDisplay
                 ListViewHitTestInfo hitTestInfo = listView1.HitTest(e.X, e.Y);
                 if (hitTestInfo.Item != null)
                 {
-                    contextMenuStrip1.Show(listView1, e.Location);
+                    var item = listView1.SelectedItems[0].Tag as FileManager;
+                    if (item.IsRecycleBin())
+                    {
+                        Console.WriteLine("This is recycle bin");
+                        recycleBinContextMenu.Show(listView1, e.Location);
+                    }
+                    else
+                    {
+                        Console.WriteLine("This is not recycle bin");
+                        contextMenuStrip1.Show(listView1, e.Location);
+                    }
                 }
             }
         }
         private void listView1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            Console.WriteLine("Call this func");
             ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
             if (selecteditem != null)
             {
@@ -204,6 +215,7 @@ namespace DiskDisplay
                 else if (selecteditem.Tag is Directory)
                 {
                     if (IsUserInteraction) return;
+                    IsUserInteraction = true;
                     var selectedFolder = selecteditem.Tag as Directory;
                     if (folderTree.SelectedNode != null)
                         folderTree.SelectedNode.BackColor = Color.White;
@@ -218,8 +230,6 @@ namespace DiskDisplay
                     {
                         if (selectedFolder == FileListView.History[FileListView.CurrentHistoryIndex + 1])
                         {
-                            Console.WriteLine("Here1");
-
                             ++FileListView.CurrentHistoryIndex;
                         }
                         else
@@ -232,10 +242,11 @@ namespace DiskDisplay
                         }
                     }
                     FileListView.RenderListView(ref listView1);
+                    IsUserInteraction = false;
 
                 }
             }
-            }
+        }
 
         private void listView1_SelectedIndexChanged_2(object sender, EventArgs e)
         {
@@ -299,6 +310,49 @@ namespace DiskDisplay
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var item = listView1.SelectedItems[0].Tag as FileManager;
+            if(item.IsFAT32)
+            {
+                if(fat32.DeleteFile(item))
+                {
+                    Console.WriteLine("Current index: " + FileListView.CurrentHistoryIndex);
+                    Console.WriteLine("History length: " + FileListView.History.Count);
+                    listView1.Items.Remove(item.GetListViewItem());
+                    var Parent = item.GetParent();
+                    bool result = Parent.Children.Remove(item);
+                    Console.WriteLine(result);
+                    MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                } else
+                    MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            }
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var item = listView1.SelectedItems[0].Tag as FileManager;
+
+            string fileContent = item.MainName;
+            MessageBox.Show(fileContent, "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void restoreToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var item = listView1.SelectedItems[0].Tag as FileManager;
+            if(fat32.RestoreFile(item))
+            {
+                MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            }
+            else
+            {
+                MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            }
         }
     }
 }

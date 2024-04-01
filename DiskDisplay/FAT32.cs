@@ -235,7 +235,19 @@ class FAT32 : FileSystem
     }
     public override bool RestoreFile(FileManager file)
     {
-        return true;
+        if (file.IsFAT32 == false)
+            return false;
+        string filename = @"\\.\" + DriveName;
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        {
+            byte[] value = { 0x48 };
+            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 
