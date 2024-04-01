@@ -20,7 +20,7 @@ class FAT32 : FileSystem
     public UInt32 StartingClusterOfRDET;
     public string FATType;
     private UInt32 SeedId = 0x05;
-
+    Dictionary<UInt32, List<byte>> StartingCLuter_FirstByteEntry = new Dictionary<UInt32, List<byte>>(); 
 
     //--------------------------------------------------------------
 
@@ -115,21 +115,27 @@ class FAT32 : FileSystem
     }
     public override bool DeleteFile(FileManager file)
     {
-        if (file.IsFAT32 == false)
-            return false;
-        string filename = @"\\.\" + DriveName;
-        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        try
         {
-            byte[] value = { 0xE5 };
-            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            if (file.IsFAT32 == false)
+                return false;
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
-                return true;
+                byte[] value = { 0xE5 };
+                if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, true))
+                {
+                    return true;
+                }
             }
         }
-
+        catch
+        {
+            return false;
+        }
         return false;
     }
-    private bool ChangeEntryWithValue(FileStream fileStream, FileManager file, UInt32 StartingCluter, byte[] value)
+    private bool ChangeEntryWithValue(FileStream fileStream, FileManager file, UInt32 StartingCluter, byte[] value, bool isDelete)
     {
         List<UInt32> ListOfCluster = FindListOfClusters(StartingCluter);
         byte[] ClusterByte = new byte[0];
@@ -146,6 +152,7 @@ class FAT32 : FileSystem
         byte[] temp = new byte[32];
 
         int total = 0;
+        
         while (total < SectorPerCluster * BytesPerSector * ListOfCluster.Count)
         {
             Array.Copy(ClusterByte, total, temp, 0, 32);
@@ -177,6 +184,7 @@ class FAT32 : FileSystem
             }
             if (!longNameFile)
                 name = Encoding.ASCII.GetString(temp, 0, 8);
+
             bool flag = false;
             if (file == null)
                 flag = true;
@@ -187,14 +195,45 @@ class FAT32 : FileSystem
             if (flag)
             {
                 int backuptotal = total;
-                while (count > 0)
+                List<byte> FirstByteOfEntry = new List<byte>();
+                int index = 0;
+                while (index < count)
                 {
                     total -= 32;
-                    ClusterByte[total] = value[0];
-                    count--;
+                    if(isDelete)
+                    {
+                        byte firstbyte = ClusterByte[total];
+                        ClusterByte[total] = 0xE5;
+                        //if (name.Contains(".       ") || name.Contains("..      ") || BitConverter.ToUInt16(temp, 0x1A) == StartingCluter)
+                        //    continue;
+                        FirstByteOfEntry.Add(firstbyte);
+                    }
+                    else
+                    {
+                        if(name.Contains(".      ") || name.Contains("       "))
+                            ClusterByte[total] = 0x2E;
+                        else
+                        {
+                            if (StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)))
+                            {
+                                ClusterByte[total] = StartingCLuter_FirstByteEntry[temp[0x1A]][index];
+
+                                if(index == count - 1)
+                                    StartingCLuter_FirstByteEntry.Remove(BitConverter.ToUInt16(temp, 0x1A));
+                            }
+                            else
+                                ClusterByte[total] = 0x48; 
+
+                        }
+
+                    }
+                    index++;
                 }
+                if(!StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)))
+                    StartingCLuter_FirstByteEntry.Add(BitConverter.ToUInt16(temp, 0x1A), FirstByteOfEntry);
                 total = backuptotal;
             }
+
             //Check if it is a Directory --> Change in its children
             if (!CheckBitAt(temp[0x0B], 5) && CheckBitAt(temp[0x0B], 4) && !CheckBitAt(temp[0x0B], 1) 
                 && !name.Contains(".       ") && !name.Contains("..      ")
@@ -203,9 +242,9 @@ class FAT32 : FileSystem
                 UInt16 s = BitConverter.ToUInt16(temp, 0x1A);
                 bool HasDelete = false;
                 if (flag)
-                    HasDelete = ChangeEntryWithValue(fileStream, null, s, value);
+                    HasDelete = ChangeEntryWithValue(fileStream, null, s, value, isDelete);
                 else // find in it's children
-                    HasDelete = ChangeEntryWithValue(fileStream, file, s, value);
+                    HasDelete = ChangeEntryWithValue(fileStream, file, s, value, isDelete);
                 if (HasDelete)
                     flag = true;
 
@@ -241,7 +280,7 @@ class FAT32 : FileSystem
         using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
         {
             byte[] value = { 0x48 };
-            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, false))
             {
                 return true;
             }
