@@ -77,8 +77,26 @@ class NTFS : FileSystem
 
     public override bool DeleteFile(FileManager file)
     {
-        // tu tu
-        return true;
+        try
+        {
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+            {
+                // Calculate the offset of the MFT entry for the file to be deleted
+                ulong mftEntryOffset = CalculateMFTEntryOffset(file.ExtendedName, StartingClusterOfMFT, BytePerEntry);
+
+                // Mark the MFT entry as unused or set appropriate flags to indicate deletion
+                byte[] deletedFlag = { 0xE5 };
+                filestream.Seek((long)mftEntryOffset, SeekOrigin.Begin);
+                filestream.Write(deletedFlag, 0, 1);
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file: {ex.Message}");
+            return false;
+        }
     }
 
     public override bool RestoreFile(FileManager file)
@@ -163,6 +181,30 @@ class NTFS : FileSystem
     {
         return (Int64)(Cluster * SectorPerCluster * BytePerSector);
     }
+
+    private ulong CalculateMFTEntryOffset(string fileName, UInt64 startingClusterOfMFT, UInt32 bytePerEntry)
+    {
+        // Calculate the size of each cluster
+        ulong clusterSize = (ulong)BytePerSector * SectorPerCluster;
+
+        // Calculate the number of MFT entries per cluster
+        uint entriesPerCluster = (uint)(clusterSize / bytePerEntry);
+
+        // Calculate the number of clusters needed to store the MFT entry
+        uint clustersNeeded = (uint)Math.Ceiling((double)fileName.Length / bytePerEntry);
+
+        // Calculate the starting cluster index of the MFT entry
+        ulong startingClusterIndex = startingClusterOfMFT + (clustersNeeded - 1);
+
+        // Calculate the byte offset within the cluster for the MFT entry
+        uint byteOffset = (uint)((fileName.Length - 1) % bytePerEntry);
+
+        // Calculate the byte offset within the MFT for the MFT entry
+        ulong mftEntryOffset = startingClusterIndex * clusterSize + byteOffset;
+
+        return mftEntryOffset;
+    }
+
 }
 
 

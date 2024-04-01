@@ -204,8 +204,6 @@ class FAT32 : FileSystem
                     {
                         byte firstbyte = ClusterByte[total];
                         ClusterByte[total] = 0xE5;
-                        //if (name.Contains(".       ") || name.Contains("..      ") || BitConverter.ToUInt16(temp, 0x1A) == StartingCluter)
-                        //    continue;
                         FirstByteOfEntry.Add(firstbyte);
                     }
                     else
@@ -216,7 +214,7 @@ class FAT32 : FileSystem
                         {
                             if (StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)))
                             {
-                                ClusterByte[total] = StartingCLuter_FirstByteEntry[temp[0x1A]][index];
+                                ClusterByte[total] = StartingCLuter_FirstByteEntry[BitConverter.ToUInt16(temp, 0x1A)][index];
 
                                 if(index == count - 1)
                                     StartingCLuter_FirstByteEntry.Remove(BitConverter.ToUInt16(temp, 0x1A));

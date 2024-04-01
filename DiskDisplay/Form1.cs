@@ -20,6 +20,8 @@ namespace DiskDisplay
         private FAT32 fat32 = new FAT32("F:");
         private NTFS ntfs = new NTFS("E:");
         private bool IsUserInteraction = false;
+        private Directory RootFolder = new Directory();
+        private Directory RootFolder1 = new Directory();
         public Form1()
         {
             InitializeComponent();
@@ -29,12 +31,10 @@ namespace DiskDisplay
             List<FileManager> fat32Files = new List<FileManager>();
             fat32Files = fat32.ReadFileSystem();
 
-            var RootFolder = new Directory() ;
             RootFolder.Children = fat32Files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
 
-            var RootFolder1 = new Directory();
             RootFolder1.Children = files;
 
             var RecycleBin = new Directory();
@@ -196,7 +196,6 @@ namespace DiskDisplay
         }
         private void listView1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            Console.WriteLine("Call this func");
             ListViewItem selecteditem = listView1.SelectedItems.Count > 0 ? listView1.SelectedItems[0] : null;
             if (selecteditem != null)
             {
@@ -325,11 +324,28 @@ namespace DiskDisplay
                     var Parent = item.GetParent();
                     bool result = Parent.Children.Remove(item);
                     Console.WriteLine(result);
+                    item.SetRecycleBin(true);
+                    FileSystem.RecycleBin.Add(item);
                     MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else
                     MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             }
+            /*else
+            {
+                if (ntfs.DeleteFile(item))
+                {
+                    Console.WriteLine("Current index: " + FileListView.CurrentHistoryIndex);
+                    Console.WriteLine("History length: " + FileListView.History.Count);
+                    listView1.Items.Remove(item.GetListViewItem());
+                    var Parent = item.GetParent();
+                    bool result = Parent.Children.Remove(item);
+                    Console.WriteLine(result);
+                    MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                    MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }*/
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -345,6 +361,14 @@ namespace DiskDisplay
             var item = listView1.SelectedItems[0].Tag as FileManager;
             if(fat32.RestoreFile(item))
             {
+                FileSystem.RecycleBin.Remove(item);
+                item.SetRecycleBin(false);
+                listView1.Items.Remove(item.GetListViewItem());
+                if (item.IsFAT32)
+                {
+                    RootFolder.Children.Add(item);
+                }
+                else RootFolder1.Children.Add(item);
                 MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             }

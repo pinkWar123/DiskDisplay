@@ -60,6 +60,11 @@ class FileManager
         return this.isRecycleBin;
     }
 
+    public void SetRecycleBin(bool value)
+    {
+        isRecycleBin = value;
+    }
+
     public void SetInvisible()
     {
         CurrentNode = null;
