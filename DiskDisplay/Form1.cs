@@ -17,8 +17,8 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("F:");
-        private NTFS ntfs = new NTFS("E:");
+        private FAT32 fat32 = new FAT32("H:");
+        private NTFS ntfs = new NTFS("G:");
         private bool IsUserInteraction = false;
         private Directory RootFolder = new Directory();
         private Directory RootFolder1 = new Directory();

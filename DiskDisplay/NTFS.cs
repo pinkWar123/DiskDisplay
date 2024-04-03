@@ -71,10 +71,7 @@ class NTFS : FileSystem
                     {
                         if (temp.ID == file.ID)
                         {
-                            for (int i = 0x16; i < 0x18; i++)
-                            {
-                                MFTBytes[i] = 0x00;
-                            }
+                            MFTBytes[0x16] = 0;
                             filestream.Seek(-MFTBytes.Length, SeekOrigin.Current);
 
                             // Write the modified MFT entry back to the file
@@ -208,7 +205,7 @@ class NTFS : FileSystem
         }
     }
 
-    public override bool DeleteFile(FileManager file)
+    /*public override bool DeleteFile(FileManager file)
     {
         try
         {
@@ -249,10 +246,10 @@ class NTFS : FileSystem
 
                                     Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
 
-                                    /*entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
+                                    *//*entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 1] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 2] = 0x00;
-                                    entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;*/
+                                    entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;*//*
                                     entry[AttributeOffset + ContentOffset + 6] = 0x01;
                                     Random random = new Random();
                                     string randomChars = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)
@@ -300,7 +297,7 @@ class NTFS : FileSystem
             return false;
         }
     }
-
+*/
     private Int64 OffsetWithCluster(UInt64 Cluster)
     {
         return (Int64)(Cluster * SectorPerCluster * BytePerSector);
@@ -345,6 +342,11 @@ static class MFTEntry
 
         if (status == 0x00 || status == 0x02)
             return null;
+        if(status == 0x00)
+        {
+            //RecycleBin.Children.Add
+            return null;
+        }
 
 
         DateTime Creationtime = DateTime.Now;
