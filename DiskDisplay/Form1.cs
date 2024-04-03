@@ -63,6 +63,8 @@ namespace DiskDisplay
 
             listView1.MouseDoubleClick += listView1_MouseDoubleClick;
             listView1.MouseClick += listView1_MouseUp;
+
+            
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -331,12 +333,10 @@ namespace DiskDisplay
                     MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             }
-            /*else
+            else
             {
                 if (ntfs.DeleteFile(item))
                 {
-                    Console.WriteLine("Current index: " + FileListView.CurrentHistoryIndex);
-                    Console.WriteLine("History length: " + FileListView.History.Count);
                     listView1.Items.Remove(item.GetListViewItem());
                     var Parent = item.GetParent();
                     bool result = Parent.Children.Remove(item);
@@ -345,7 +345,7 @@ namespace DiskDisplay
                 }
                 else
                     MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }*/
+            }
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)

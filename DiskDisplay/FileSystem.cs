@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 class FileSystem
 {
+    public UInt32 firstSector;
     public string DriveName;
     public bool IsFAT32Type;
     public static List<FileManager> RecycleBin = new List<FileManager>();

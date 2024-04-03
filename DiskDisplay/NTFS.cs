@@ -1,9 +1,13 @@
-﻿using System;
+﻿using DiskDisplay;
+using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 class NTFS : FileSystem
 {
@@ -73,30 +77,6 @@ class NTFS : FileSystem
         }
         
         return "Wrong File";
-    }
-
-    public override bool DeleteFile(FileManager file)
-    {
-        try
-        {
-            string filename = @"\\.\" + DriveName;
-            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
-            {
-                // Calculate the offset of the MFT entry for the file to be deleted
-                ulong mftEntryOffset = CalculateMFTEntryOffset(file.ExtendedName, StartingClusterOfMFT, BytePerEntry);
-
-                // Mark the MFT entry as unused or set appropriate flags to indicate deletion
-                byte[] deletedFlag = { 0xE5 };
-                filestream.Seek((long)mftEntryOffset, SeekOrigin.Begin);
-                filestream.Write(deletedFlag, 0, 1);
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deleting file: {ex.Message}");
-            return false;
-        }
     }
 
     public override bool RestoreFile(FileManager file)
@@ -177,40 +157,112 @@ class NTFS : FileSystem
         }
     }
 
+    public override bool DeleteFile(FileManager file)
+    {
+        try
+        {
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+            {
+                filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
+                int count = 0;
+                while(count++ < 200)
+                {
+                    byte[] entry = new byte[BytePerEntry];
+                    filestream.Read(entry, 0, entry.Length);
+
+                    FileManager temp = MFTEntry.MFTEntryProcess(entry);
+                    if(temp != null)
+                    {
+                        if(temp.ID == file.ID)
+                        {
+                            UInt16 AttributeOffset = BitConverter.ToUInt16(entry, 0x14);
+                            UInt16 status = BitConverter.ToUInt16(entry, 0x16);
+                            UInt32 EntryID = BitConverter.ToUInt32(entry, 0x2C);
+
+                            if (status == 0x00 || status == 0x02)
+                                return false;
+
+                            // Read Attribute-------------------------------
+                            while (AttributeOffset <= 1024)
+                            {
+                                UInt32 AttributeType = BitConverter.ToUInt32(entry, AttributeOffset);
+                                if (AttributeType == 0xFFFFFFFF) // End Attribute
+                                    break;
+                                UInt32 AttributeSize = BitConverter.ToUInt32(entry, AttributeOffset + 0x04);
+                                UInt32 ContentOffset = BitConverter.ToUInt16(entry, AttributeOffset + 0x14);
+                                if (AttributeType == 0x30)
+                                {
+                                    byte[] rootIdBytes = BitConverter.GetBytes(MFTEntry.RecyclerId);
+
+
+                                    Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
+
+                                    /*entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
+                                    entry[AttributeOffset + ContentOffset + 0x38 + 1] = 0x00;
+                                    entry[AttributeOffset + ContentOffset + 0x38 + 2] = 0x00;
+                                    entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;*/
+                                    entry[AttributeOffset + ContentOffset + 6] = 0x01;
+                                    Random random = new Random();
+                                    string randomChars = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)
+                                                                          .Select(s => s[random.Next(s.Length)]).ToArray());
+
+                                    // Convert the random characters to Unicode (UTF-16) bytes
+
+                                    byte[] randomBytes = Encoding.Unicode.GetBytes(randomChars);
+
+                                    // Create a byte array for the new filename, including "$R" prefix and 5 random characters
+                                    byte[] newFilename = new byte[30]; // 2 bytes for each character (12 characters)
+                                    newFilename[0] = (byte)'$'; // First character: $
+                                    newFilename[1] = 0;         // Second character: null terminator for Unicode (UTF-16)
+                                    newFilename[2] = (byte)'R'; // Third character: R
+                                    newFilename[3] = 0;         // Fourth character: null terminator for Unicode (UTF-16)
+                                    Array.Copy(randomBytes, 0, newFilename, 4, randomBytes.Length); // Copy random characters starting from index 4
+                                    Array.Copy(Encoding.Unicode.GetBytes(".txt"), 0, newFilename, 16, 8); // Add ".txt" extension
+                                                                                                          // Padding with zeros
+                                    for (int i = 24; i < 30; i++)
+                                    {
+                                        newFilename[i] = 0;
+                                    }
+
+                                    // Update the filename in the entry array at offset 42
+                                    Array.Copy(newFilename, 0, entry, AttributeOffset + ContentOffset + 0x42, newFilename.Length);
+                                    filestream.Seek(-entry.Length, SeekOrigin.Current);
+
+                                    // Write the modified entry back to the file
+                                    filestream.Write(entry, 0, entry.Length);
+
+                                }
+                                
+                                AttributeOffset += (UInt16)AttributeSize;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file: {ex.Message}");
+            return false;
+        }
+    }
+
     private Int64 OffsetWithCluster(UInt64 Cluster)
     {
         return (Int64)(Cluster * SectorPerCluster * BytePerSector);
     }
 
-    private ulong CalculateMFTEntryOffset(string fileName, UInt64 startingClusterOfMFT, UInt32 bytePerEntry)
-    {
-        // Calculate the size of each cluster
-        ulong clusterSize = (ulong)BytePerSector * SectorPerCluster;
-
-        // Calculate the number of MFT entries per cluster
-        uint entriesPerCluster = (uint)(clusterSize / bytePerEntry);
-
-        // Calculate the number of clusters needed to store the MFT entry
-        uint clustersNeeded = (uint)Math.Ceiling((double)fileName.Length / bytePerEntry);
-
-        // Calculate the starting cluster index of the MFT entry
-        ulong startingClusterIndex = startingClusterOfMFT + (clustersNeeded - 1);
-
-        // Calculate the byte offset within the cluster for the MFT entry
-        uint byteOffset = (uint)((fileName.Length - 1) % bytePerEntry);
-
-        // Calculate the byte offset within the MFT for the MFT entry
-        ulong mftEntryOffset = startingClusterIndex * clusterSize + byteOffset;
-
-        return mftEntryOffset;
-    }
 
 }
 
 
 static class MFTEntry
 {
-    
+    public static UInt32 RecycleBinId = 0;
+    public static UInt32 RecyclerId = 0;
     private static bool IsCorrectFile(byte[] entry)
     {
 
@@ -234,8 +286,8 @@ static class MFTEntry
     public static FileManager MFTEntryProcess(byte[] entry)
     {
 
-        if(!IsCorrectFile(entry))
-            return null;
+        /*if(!IsCorrectFile(entry))
+            return null;*/
         UInt16 AttributeOffset = BitConverter.ToUInt16(entry, 0x14);
         UInt16 status = BitConverter.ToUInt16(entry, 0x16);
         UInt32 EntryID = BitConverter.ToUInt32(entry, 0x2C);
@@ -288,7 +340,23 @@ static class MFTEntry
                 filename = Encoding.Unicode.GetString(entry,AttributeOffset + ContentOffset + 0x42, 2*entry[AttributeOffset + ContentOffset + 0x40]);
                 
                 if (filename[0] == '$' || filename.Length == 0)
+                {
+                    Console.WriteLine("----------");
+                    Console.WriteLine("File name: " + filename);
+                    Console.WriteLine("ID: " + EntryID);
+                    Console.WriteLine("RootID: " + RootID);
+                    Console.WriteLine("----------");
+                    if(filename == "$RECYCLE.BIN")
+                    {
+                        RecycleBinId = EntryID;
+                    }
                     return null;
+                }
+
+                if(RecycleBinId != 0 && RootID == RecycleBinId)
+                {
+                    RecyclerId = EntryID;
+                }
             }
             else if(AttributeType == 0x80)
             {

@@ -90,29 +90,6 @@ class FAT32 : FileSystem
 
         return "";
     }
-    private bool ChangeFat(FileStream filestream, UInt32 Offset, List<UInt32> ListofCLuster, Int32 value)
-    {
-        byte[] bytes;
-        for (int i = 0; i < ListofCLuster.Count; i++)
-        {
-            if (value != 0x00)
-                bytes = BitConverter.GetBytes(value);
-            else
-            {
-                if (i == ListofCLuster.Count)
-                    bytes = BitConverter.GetBytes(0xFFFFFFFF);
-                else
-                    bytes = BitConverter.GetBytes(ListofCLuster[i]);
-            }
-
-            filestream.Write(bytes, (int)(ListofCLuster[i] - 2) * 4 + (int)Offset, bytes.Length);
-        }
-        return true;
-    }
-    private bool ChangeEntry(FileStream filestream, FileManager file)
-    {
-        return true;
-    }
     public override bool DeleteFile(FileManager file)
     {
         try
