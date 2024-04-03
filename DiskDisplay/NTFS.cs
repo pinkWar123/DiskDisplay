@@ -21,6 +21,12 @@ class NTFS : FileSystem
         this.DriveName = drive;
     }
 
+    public NTFS(UInt32 firstsector, string Diskname)
+    {
+        this.DiskName = Diskname;
+        this.FirstSector = firstsector;
+    }
+
     public override List<FileManager> ReadFileSystem()
     {
         try
@@ -107,7 +113,7 @@ class NTFS : FileSystem
                     while(size > 0)
                     {
                         filestream.Read(data, 0, (int)BytePerSector * SectorPerCluster);
-                        result += Encoding.ASCII.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
+                        result += Encoding.UTF8.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
                         size -= data.Length;
                     }
                 }
@@ -319,7 +325,7 @@ static class MFTEntry
                 {
                     if (IsNon_Resident == 0x00)
                     {
-                        content = Encoding.ASCII.GetString(entry, AttributeOffset + ContentOffset, (int)SizeOfContent);
+                        content = Encoding.UTF8.GetString(entry, AttributeOffset + ContentOffset, (int)SizeOfContent);
                     }
                     else if (IsNon_Resident == 0x01)
                     {

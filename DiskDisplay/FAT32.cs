@@ -40,6 +40,11 @@ class FAT32 : FileSystem
     {
         DriveName = file;
     }
+    public FAT32(UInt32 firstSector, string Diskname)
+    {
+        this.FirstSector = firstSector;
+        this.DiskName = Diskname;
+    }
     ~FAT32() { }
 
     public override List<FileManager> ReadFileSystem()
