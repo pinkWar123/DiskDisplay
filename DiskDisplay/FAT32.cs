@@ -20,7 +20,7 @@ class FAT32 : FileSystem
     public UInt32 StartingClusterOfRDET;
     public string FATType;
     private UInt32 SeedId = 0x05;
-    Dictionary<UInt32, List<byte>> StartingCLuter_FirstByteEntry = new Dictionary<UInt32, List<byte>>(); 
+    Dictionary<UInt16, List<byte>> StartingCLuter_FirstByteEntry = new Dictionary<UInt16, List<byte>>(); 
 
     //--------------------------------------------------------------
 
@@ -39,6 +39,11 @@ class FAT32 : FileSystem
     public FAT32(string file)
     {
         DriveName = file;
+    }
+    public FAT32(UInt32 firstSector, string Diskname)
+    {
+        this.FirstSector = firstSector;
+        this.DiskName = Diskname;
     }
     ~FAT32() { }
 
@@ -185,7 +190,7 @@ class FAT32 : FileSystem
                     }
                     else
                     {
-                        if(name.Contains(".      ") || name.Contains("       "))
+                        if(name.Contains(".       ") || name.Contains("       "))
                             ClusterByte[total] = 0x2E;
                         else
                         {
@@ -204,7 +209,7 @@ class FAT32 : FileSystem
                     }
                     index++;
                 }
-                if(!StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)))
+                if(!StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)) && isDelete)
                     StartingCLuter_FirstByteEntry.Add(BitConverter.ToUInt16(temp, 0x1A), FirstByteOfEntry);
                 total = backuptotal;
             }
@@ -249,17 +254,26 @@ class FAT32 : FileSystem
     }
     public override bool RestoreFile(FileManager file)
     {
-        if (file.IsFAT32 == false)
-            return false;
-        string filename = @"\\.\" + DriveName;
-        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        try
         {
-            byte[] value = { 0x48 };
-            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, false))
+            if (file.IsFAT32 == false)
+                return false;
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
-                return true;
+                byte[] value = { 0x48 };
+                if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, false))
+                {
+                    return true;
+                }
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            return false;
+        }
+        
 
         return false;
     }
@@ -299,17 +313,6 @@ class FAT32 : FileSystem
         }
     }
 
-    // This function will determie if This File is Archive
-    //private bool IsArchive(byte data)
-    //{
-    //    byte mask = (byte)(1 << 5);
-    //    // check if Archive bit(bit 5) is 1
-    //    if ((data & mask) != 0)
-    //    {
-    //        return true;
-    //    }
-    //    return false;
-    //}
     private bool CheckBitAt(byte data, int k)
     {
         byte mask = (byte)(1 << k);
@@ -376,13 +379,24 @@ class FAT32 : FileSystem
             if (temp[0x0B] == 0x0F)
             {
                 FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp, RootID);
-                if (temp[0x00] == 0xE5 && tempfile.RootID == 5) RecycleBin.Add(tempfile);
+                if (temp[0x00] == 0xE5)
+                {
+                    if(!tempfile.Parent.IsRecycleBin())
+                        RecycleBin.Add(tempfile);
+                }
                 else FileRoot.Add(tempfile);
             }
             else
             {
                 FileManager tempfile = ProcessShortName(fileStream, temp, RootID);
-                if (temp[0x00] == 0xE5 && tempfile.RootID == 5) RecycleBin.Add(tempfile);
+                if (temp[0x00] == 0xE5)
+                {
+                    if (temp[0x00] == 0xE5)
+                    {
+                        if (!tempfile.Parent.IsRecycleBin())
+                            RecycleBin.Add(tempfile);
+                    }
+                }
                 else FileRoot.Add(tempfile);
             }
 

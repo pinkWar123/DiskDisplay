@@ -25,6 +25,12 @@ class NTFS : FileSystem
         this.DriveName = drive;
     }
 
+    public NTFS(UInt32 firstsector, string Diskname)
+    {
+        this.DiskName = Diskname;
+        this.FirstSector = firstsector;
+    }
+
     public override List<FileManager> ReadFileSystem()
     {
         try
@@ -43,6 +49,51 @@ class NTFS : FileSystem
             Console.WriteLine(e.ToString());
         }
         return null;
+    }
+
+    public override bool DeleteFile(FileManager file)
+    {
+        try
+        {
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+            {
+                filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
+                int count = 0;
+                while (count++ < 200)
+                {
+                    Console.WriteLine(count);
+                    byte[] MFTBytes = new byte[BytePerEntry];
+                    filestream.Read(MFTBytes, 0, MFTBytes.Length);
+
+                    FileManager temp = MFTEntry.MFTEntryProcess(MFTBytes);
+                    if (temp != null)
+                    {
+                        if (temp.ID == file.ID)
+                        {
+                            for (int i = 0x16; i < 0x18; i++)
+                            {
+                                MFTBytes[i] = 0x00;
+                            }
+                            filestream.Seek(-MFTBytes.Length, SeekOrigin.Current);
+
+                            // Write the modified MFT entry back to the file
+                            filestream.Write(MFTBytes, 0, MFTBytes.Length);
+
+                            // Exit the loop since the modification is done
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file: {ex.Message}");
+            return false;
+        }
     }
 
     public override string ReadData(FileManager file)
@@ -66,7 +117,7 @@ class NTFS : FileSystem
                     while(size > 0)
                     {
                         filestream.Read(data, 0, (int)BytePerSector * SectorPerCluster);
-                        result += Encoding.ASCII.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
+                        result += Encoding.UTF8.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
                         size -= data.Length;
                     }
                 }
@@ -365,7 +416,7 @@ static class MFTEntry
                 {
                     if (IsNon_Resident == 0x00)
                     {
-                        content = Encoding.ASCII.GetString(entry, AttributeOffset + ContentOffset, (int)SizeOfContent);
+                        content = Encoding.UTF8.GetString(entry, AttributeOffset + ContentOffset, (int)SizeOfContent);
                     }
                     else if (IsNon_Resident == 0x01)
                     {
