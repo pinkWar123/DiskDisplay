@@ -1,12 +1,8 @@
 using System;
 using System.IO;
-using System.Numerics;
 using System.Text;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.IO.Pipes;
 using System.Linq;
-using System.Xml.Linq;
 
 class FAT32 : FileSystem
 {
@@ -347,6 +343,7 @@ class FAT32 : FileSystem
     // This Function will Read all FIle in RDET and SDET and return list of FileManager
     private void ReadDET(FileStream fileStream, UInt32 StartingCluster, ref List<FileManager> FileRoot, bool IsRootFolderDeleted)
     {
+        Console.WriteLine("Call DET");
         List<UInt32> ListofCluster = FindListOfClusters(StartingCluster);
         List<byte[]> EntryQueue = new List<byte[]>();
 
@@ -376,7 +373,7 @@ class FAT32 : FileSystem
         {
             byte[] temp = EntryQueue[0];
             EntryQueue.RemoveAt(0);
-            FileManager tempfile;
+            /*FileManager tempfile;
             if (temp[0x0B] == 0x0F)
                 tempfile = ProcessLongName(fileStream, ref EntryQueue, temp);
             else tempfile = ProcessShortName(fileStream, temp);
@@ -390,7 +387,39 @@ class FAT32 : FileSystem
                 tempfile.SetVisible(false);
                 FileRoot.Add(tempfile);
             }
-            else FileRoot.Add(tempfile);
+            else FileRoot.Add(tempfile);*/
+            if (temp[0x0B] == 0x0F)
+            {
+                FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp);
+                if (temp[0x00] == 0xE5)
+                {
+                    if (!IsRootFolderDeleted)
+                    {
+                        tempfile.SetVisible(false);
+                        tempfile.SetRecycleBin(true);
+                        RecycleBin.Add(tempfile);
+                    }
+                   
+                        FileRoot.Add(tempfile);
+                }
+                else FileRoot.Add(tempfile);
+            }
+            else
+            {
+                FileManager tempfile = ProcessShortName(fileStream, temp);
+                if (temp[0x00] == 0xE5)
+                {
+                    if (!IsRootFolderDeleted)
+                    {
+                        tempfile.SetVisible(false);
+                        tempfile.SetRecycleBin(true);
+                        RecycleBin.Add(tempfile);
+                    }
+
+                    FileRoot.Add(tempfile);
+                }
+                else FileRoot.Add(tempfile);
+            }
         }
     }
 

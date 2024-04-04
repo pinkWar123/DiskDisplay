@@ -1,11 +1,5 @@
 using System;
-using System.IO;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
-using DiskDisplay;
-using System.Collections;
 
 
 class Directory : FileManager
@@ -70,27 +64,23 @@ class Directory : FileManager
         }
     }
 
-    
-
     public override void Populate()
     {
         Console.WriteLine(MainName);
         CurrentNode.ImageKey = IsFile ? "fileIcon" : "folderIcon";
         CurrentNode.SelectedImageKey = IsFile ? "fileIcon" : "folderIcon";
         CurrentNode.Tag = this;
-
         CurrentNode.Text = MainName;
         if (Children != null)
         {
             foreach (var child in Children)
             {
                 TreeNode node = new TreeNode();
-                child.SetNode(node); 
+                child.SetNode(node);
                 child.Populate();
                 child.SetParent(this);
                 CurrentNode.Nodes.Add(node);
             }
-
         }
         CurrentItem.Text = MainName;
         CurrentItem.Tag = this;
