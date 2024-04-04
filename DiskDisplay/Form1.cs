@@ -17,11 +17,12 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("H:");
-        private NTFS ntfs = new NTFS("G:");
+        private FAT32 fat32 = new FAT32("F:");
+        private NTFS ntfs = new NTFS("E:");
         private bool IsUserInteraction = false;
         private Directory RootFolder = new Directory();
         private Directory RootFolder1 = new Directory();
+        private bool IsRecycleBin = false;
         public Form1()
         {
             InitializeComponent();
@@ -50,6 +51,10 @@ namespace DiskDisplay
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
+                if(folder == SystemFolder.Children[SystemFolder.Children.Count -1 ])
+                {
+                    folder.GetListViewItem().Tag = folder;
+                }
             }
 
             RootFolder1.SetItemText("E:");
@@ -218,6 +223,10 @@ namespace DiskDisplay
                     if (IsUserInteraction) return;
                     IsUserInteraction = true;
                     var selectedFolder = selecteditem.Tag as Directory;
+                    if(selectedFolder.GetListViewItem().Text == "Recycle Bin" && FileListView.CurrentHistoryIndex == 0)
+                    {
+                        IsRecycleBin = true;
+                    }
                     if (folderTree.SelectedNode != null)
                         folderTree.SelectedNode.BackColor = Color.White;
                     folderTree.SelectedNode = selectedFolder.GetNode();
@@ -325,7 +334,6 @@ namespace DiskDisplay
                     listView1.Items.Remove(item.GetListViewItem());
                     var Parent = item.GetParent();
                     bool result = Parent.Children.Remove(item);
-                    Console.WriteLine(result);
                     item.SetRecycleBin(true);
                     FileSystem.RecycleBin.Add(item);
                     MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -340,6 +348,8 @@ namespace DiskDisplay
                     listView1.Items.Remove(item.GetListViewItem());
                     var Parent = item.GetParent();
                     bool result = Parent.Children.Remove(item);
+                    item.SetRecycleBin(true);
+                    FileSystem.RecycleBin.Add(item);
                     Console.WriteLine(result);
                     MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -359,23 +369,47 @@ namespace DiskDisplay
         private void restoreToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var item = listView1.SelectedItems[0].Tag as FileManager;
-            if(fat32.RestoreFile(item))
+            if(item.IsFAT32)
             {
-                FileSystem.RecycleBin.Remove(item);
-                item.SetRecycleBin(false);
-                listView1.Items.Remove(item.GetListViewItem());
-                if (item.IsFAT32)
+                if (fat32.RestoreFile(item))
                 {
-                    RootFolder.Children.Add(item);
-                }
-                else RootFolder1.Children.Add(item);
-                MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    FileSystem.RecycleBin.Remove(item);
+                    item.SetRecycleBin(false);
+                    listView1.Items.Remove(item.GetListViewItem());
+                    if (item.IsFAT32)
+                    {
+                        RootFolder.Children.Add(item);
+                    }
+                    else RootFolder1.Children.Add(item);
+                    MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+                }
+                else
+                {
+                    MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                }
             }
             else
             {
-                MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (ntfs.RestoreFile(item))
+                {
+                    FileSystem.RecycleBin.Remove(item);
+                    item.SetRecycleBin(false);
+                    listView1.Items.Remove(item.GetListViewItem());
+                    if (item.IsFAT32)
+                    {
+                        RootFolder.Children.Add(item);
+                    }
+                    else RootFolder1.Children.Add(item);
+                    MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+                }
+                else
+                {
+                    MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                }
             }
         }
     }

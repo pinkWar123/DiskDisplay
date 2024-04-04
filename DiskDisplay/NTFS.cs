@@ -19,7 +19,7 @@ class NTFS : FileSystem
     public UInt64 StartingClusterOfMFT;
     public UInt64 StartingClusterOfBackupMFT;
     public UInt32 BytePerEntry;
-
+    public Dictionary<UInt32, UInt32> DeletedIdInfo; // This dictionary contains a map between ID of the deleted file and its RootID
     public NTFS() { }
     public NTFS(string drive) {
         this.DriveName = drive;
@@ -51,7 +51,7 @@ class NTFS : FileSystem
         return null;
     }
 
-    public override bool DeleteFile(FileManager file)
+    /*public override bool DeleteFile(FileManager file)
     {
         try
         {
@@ -91,7 +91,7 @@ class NTFS : FileSystem
             Console.WriteLine($"Error deleting file: {ex.Message}");
             return false;
         }
-    }
+    }*/
 
     public override string ReadData(FileManager file)
     {
@@ -129,7 +129,67 @@ class NTFS : FileSystem
 
     public override bool RestoreFile(FileManager file)
     {
-        // tu tu
+        try
+        {
+            var isRestoreSucceful = ChangeRootID(file, file.RootID);
+            return isRestoreSucceful;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error restoring file: {ex.Message}");
+            return false;
+        }
+    }
+
+    private bool ChangeRootID(FileManager file, UInt32 parentId)
+    {
+        string filename = @"\\.\" + DriveName;
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        {
+            filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
+            int count = 0;
+            while (count++ < 200)
+            {
+                byte[] entry = new byte[BytePerEntry];
+                filestream.Read(entry, 0, entry.Length);
+
+                FileManager temp = MFTEntry.MFTEntryProcess(entry);
+                if (temp != null)
+                {
+                    if (temp.ID == file.ID)
+                    {
+                        UInt16 AttributeOffset = BitConverter.ToUInt16(entry, 0x14);
+                        UInt16 status = BitConverter.ToUInt16(entry, 0x16);
+
+                        if (status == 0x00 || status == 0x02)
+                            return false;
+
+                        // Read Attribute-------------------------------
+                        while (AttributeOffset <= 1024)
+                        {
+                            UInt32 AttributeType = BitConverter.ToUInt32(entry, AttributeOffset);
+                            if (AttributeType == 0xFFFFFFFF) // End Attribute
+                                break;
+                            UInt32 AttributeSize = BitConverter.ToUInt32(entry, AttributeOffset + 0x04);
+                            UInt32 ContentOffset = BitConverter.ToUInt16(entry, AttributeOffset + 0x14);
+                            if (AttributeType == 0x30)
+                            {
+                                byte[] rootIdBytes = BitConverter.GetBytes(parentId);
+
+                                entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x05;
+                                Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
+                                filestream.Seek(-entry.Length, SeekOrigin.Current);
+
+                                // Write the modified entry back to the file
+                                filestream.Write(entry, 0, entry.Length);
+                            }
+
+                            AttributeOffset += (UInt16)AttributeSize;
+                        }
+                    }
+                }
+            }
+        }
         return true;
     }
 
@@ -209,28 +269,40 @@ class NTFS : FileSystem
     {
         try
         {
+            var isDeleteSucessful = ChangeRootID(file, MFTEntry.RecyclerId);
+            return isDeleteSucessful;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting file: {ex.Message}");
+            return false;
+        }
+    }*/
+
+    public override bool DeleteFile(FileManager file)
+    {
+        try
+        {
             string filename = @"\\.\" + DriveName;
             using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
                 filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
                 int count = 0;
-                while(count++ < 200)
+                while (count++ < 200)
                 {
                     byte[] entry = new byte[BytePerEntry];
                     filestream.Read(entry, 0, entry.Length);
 
                     FileManager temp = MFTEntry.MFTEntryProcess(entry);
-                    if(temp != null)
+                    if (temp != null)
                     {
-                        if(temp.ID == file.ID)
+                        if (temp.ID == file.ID)
                         {
                             UInt16 AttributeOffset = BitConverter.ToUInt16(entry, 0x14);
                             UInt16 status = BitConverter.ToUInt16(entry, 0x16);
-                            UInt32 EntryID = BitConverter.ToUInt32(entry, 0x2C);
 
                             if (status == 0x00 || status == 0x02)
                                 return false;
-
                             // Read Attribute-------------------------------
                             while (AttributeOffset <= 1024)
                             {
@@ -242,15 +314,15 @@ class NTFS : FileSystem
                                 if (AttributeType == 0x30)
                                 {
                                     byte[] rootIdBytes = BitConverter.GetBytes(MFTEntry.RecyclerId);
-
-
+                                    Console.WriteLine(MFTEntry.RecyclerId);
                                     Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
 
-                                    *//*entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
+                                    entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 1] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 2] = 0x00;
-                                    entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;*//*
-                                    entry[AttributeOffset + ContentOffset + 6] = 0x01;
+                                    entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;
+                                    entry[AttributeOffset + ContentOffset + 0x16] = 0x00;
+                                    /*
                                     Random random = new Random();
                                     string randomChars = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)
                                                                           .Select(s => s[random.Next(s.Length)]).ToArray());
@@ -271,17 +343,17 @@ class NTFS : FileSystem
                                     for (int i = 24; i < 30; i++)
                                     {
                                         newFilename[i] = 0;
-                                    }
+                                    }*/
 
                                     // Update the filename in the entry array at offset 42
-                                    Array.Copy(newFilename, 0, entry, AttributeOffset + ContentOffset + 0x42, newFilename.Length);
+                                    //Array.Copy(newFilename, 0, entry, AttributeOffset + ContentOffset + 0x42, newFilename.Length);
                                     filestream.Seek(-entry.Length, SeekOrigin.Current);
 
                                     // Write the modified entry back to the file
                                     filestream.Write(entry, 0, entry.Length);
 
                                 }
-                                
+
                                 AttributeOffset += (UInt16)AttributeSize;
                             }
                         }
@@ -297,7 +369,7 @@ class NTFS : FileSystem
             return false;
         }
     }
-*/
+
     private Int64 OffsetWithCluster(UInt64 Cluster)
     {
         return (Int64)(Cluster * SectorPerCluster * BytePerSector);
@@ -331,22 +403,17 @@ static class MFTEntry
 
         return BitConverter.ToUInt64(temp, 0);
     }
-    public static FileManager MFTEntryProcess(byte[] entry)
+    public static FileManager MFTEntryProcess(byte[] entry, bool updateRecycleBin = false)
     {
 
-        /*if(!IsCorrectFile(entry))
-            return null;*/
+        if (!IsCorrectFile(entry))
+            return null;
         UInt16 AttributeOffset = BitConverter.ToUInt16(entry, 0x14);
         UInt16 status = BitConverter.ToUInt16(entry, 0x16);
         UInt32 EntryID = BitConverter.ToUInt32(entry, 0x2C);
 
         if (status == 0x00 || status == 0x02)
             return null;
-        if(status == 0x00)
-        {
-            //RecycleBin.Children.Add
-            return null;
-        }
 
 
         DateTime Creationtime = DateTime.Now;
@@ -388,7 +455,6 @@ static class MFTEntry
                 Modifiedtime = DateTimeWithNanoSecond(entry, AttributeOffset + ContentOffset + 0x08);
             }
             else if(AttributeType == 0x30) {
-
                 RootID = GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset, 6);
                 filename = Encoding.Unicode.GetString(entry,AttributeOffset + ContentOffset + 0x42, 2*entry[AttributeOffset + ContentOffset + 0x40]);
                 
@@ -404,6 +470,24 @@ static class MFTEntry
                         RecycleBinId = EntryID;
                     }
                     return null;
+                }
+                if(RecyclerId != 0 && RootID == RecyclerId)
+                {
+                    if (status == 0x01) // File
+                    {
+                        File result = new File();
+                        result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
+                        FileSystem.RecycleBin.Add(result);
+                        result.SetRecycleBin(true);
+                    }
+                    else
+                    {
+                        Directory result = new Directory();
+                        result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
+                        FileSystem.RecycleBin.Add(result);
+                        result.SetRecycleBin(true);
+                    }
+
                 }
 
                 if(RecycleBinId != 0 && RootID == RecycleBinId)
@@ -437,7 +521,7 @@ static class MFTEntry
         }
      
 
-        if(status == 0x01) // File
+        if(status == 0x01)
         {
             File result = new File();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
@@ -455,13 +539,11 @@ static class MFTEntry
     public static DateTime DateTimeWithNanoSecond(byte[] bytes, int index)
     {
         UInt64 temp = BitConverter.ToUInt64(bytes, index);
-        DateTime result = new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc); 
-        ulong seconds = temp / 10000000; 
-        ulong nanoseconds = (temp % 10000000) * 100; 
-        result = result.AddSeconds(seconds).AddTicks((long)nanoseconds); 
-
-        result = result.ToLocalTime(); 
-
+        DateTime result = new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        ulong seconds = temp / 10000000;
+        ulong nanoseconds = (temp % 10000000) * 100;
+        result = result.AddSeconds(seconds).AddTicks((long)nanoseconds);
+        result = result.ToLocalTime();
         return result;
     }
 
