@@ -31,6 +31,7 @@ class FileManager
     protected TreeNode CurrentNode = new TreeNode();
     protected ListViewItem CurrentItem = new ListViewItem();
     protected bool isRecycleBin = false;
+    protected string Path = "";
     public FileManager() {
         
     }

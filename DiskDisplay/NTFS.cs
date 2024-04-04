@@ -19,7 +19,7 @@ class NTFS : FileSystem
     public UInt64 StartingClusterOfMFT;
     public UInt64 StartingClusterOfBackupMFT;
     public UInt32 BytePerEntry;
-    public Dictionary<UInt32, UInt32> DeletedIdInfo; // This dictionary contains a map between ID of the deleted file and its RootID
+    public Dictionary<UInt32, UInt32> DeletedIdInfo = new Dictionary<UInt32,UInt32>(); // This dictionary contains a map between ID of the deleted file and its RootID
     public NTFS() { }
     public NTFS(string drive) {
         this.DriveName = drive;
@@ -131,8 +131,17 @@ class NTFS : FileSystem
     {
         try
         {
-            var isRestoreSucceful = ChangeRootID(file, file.RootID);
-            return isRestoreSucceful;
+            if(DeletedIdInfo.ContainsKey(file.ID))
+            {
+                UInt32 rootFolderID = DeletedIdInfo[file.ID];
+                var isRestoreSucceful = ChangeRootID(file, rootFolderID);
+                if(isRestoreSucceful)
+                {
+                    DeletedIdInfo.Remove(file.ID);
+                }
+                return isRestoreSucceful;
+            }
+            return false;
         }
         catch (Exception ex)
         {
@@ -176,7 +185,7 @@ class NTFS : FileSystem
                             {
                                 byte[] rootIdBytes = BitConverter.GetBytes(parentId);
 
-                                entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x05;
+                                entry[AttributeOffset + ContentOffset + 0x06] = 0x05;
                                 Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
                                 filestream.Seek(-entry.Length, SeekOrigin.Current);
 
@@ -322,6 +331,11 @@ class NTFS : FileSystem
                                     entry[AttributeOffset + ContentOffset + 0x38 + 2] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x16] = 0x00;
+                                    entry[AttributeOffset + ContentOffset + 0x06] = 0x01;
+                                    if (!DeletedIdInfo.ContainsKey(file.ID))
+                                    {
+                                        DeletedIdInfo.Add(file.ID, file.RootID);
+                                    }
                                     /*
                                     Random random = new Random();
                                     string randomChars = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)
@@ -471,7 +485,7 @@ static class MFTEntry
                     }
                     return null;
                 }
-                if(RecyclerId != 0 && RootID == RecyclerId)
+                /*if(RecyclerId != 0 && RootID == RecyclerId)
                 {
                     if (status == 0x01) // File
                     {
@@ -493,7 +507,7 @@ static class MFTEntry
                 if(RecycleBinId != 0 && RootID == RecycleBinId)
                 {
                     RecyclerId = EntryID;
-                }
+                }*/
             }
             else if(AttributeType == 0x80)
             {
