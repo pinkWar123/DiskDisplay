@@ -68,6 +68,7 @@ namespace DiskDisplay
             FileListView.History.Add(SystemFolder);
             NTFSFolder.MainName = "E:";
             Fat32Folder.MainName = "F:";
+            RecycleBin.MainName = "Recycle Bin";
 
             listView1.MouseDoubleClick += listView1_MouseDoubleClick;
             listView1.MouseClick += listView1_MouseUp;
@@ -84,8 +85,8 @@ namespace DiskDisplay
             listView1.Columns.Add("Size", 100);
             listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
-            
 
+            Console.WriteLine("Recycle bin: " + FileSystem.RecycleBin.Count);
 
 
         }
@@ -226,6 +227,7 @@ namespace DiskDisplay
                     if (IsUserInteraction) return;
                     IsUserInteraction = true;
                     var selectedFolder = selecteditem.Tag as Directory;
+                    bool isRecycleBinFolder = selectedFolder.MainName == "Recycle Bin";
                     if(selectedFolder.GetListViewItem().Text == "Recycle Bin" && FileListView.CurrentHistoryIndex == 0)
                     {
                         IsRecycleBin = true;
@@ -254,7 +256,7 @@ namespace DiskDisplay
                             ++FileListView.CurrentHistoryIndex;
                         }
                     }
-                    FileListView.RenderListView(ref listView1);
+                    FileListView.RenderListView(ref listView1, isRecycleBinFolder);
                     IsUserInteraction = false;
 
                 }
@@ -333,9 +335,9 @@ namespace DiskDisplay
                 if(fat32.DeleteFile(item))
                 {
                     listView1.Items.Remove(item.GetListViewItem());
-                    var Parent = item.GetParent();
-                    bool result = Parent.Children.Remove(item);
+                    //bool result = Parent.Children.Remove(item);
                     item.SetRecycleBin(true);
+                    item.SetVisible(false);
                     FileSystem.RecycleBin.Add(item);
                     Console.WriteLine(FileSystem.RecycleBin.Count);
 
@@ -353,6 +355,7 @@ namespace DiskDisplay
                     var Parent = item.GetParent();
                     bool result = Parent.Children.Remove(item);
                     item.SetRecycleBin(true);
+                    item.SetVisible(false);
                     FileSystem.RecycleBin.Add(item);
                     Console.WriteLine(FileSystem.RecycleBin.Count);
                     MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -379,12 +382,9 @@ namespace DiskDisplay
                 {
                     FileSystem.RecycleBin.Remove(item);
                     item.SetRecycleBin(false);
+                    item.SetVisible(true);
                     listView1.Items.Remove(item.GetListViewItem());
-                    if (item.IsFAT32)
-                    {
-                        Fat32Folder.Children.Add(item);
-                    }
-                    else NTFSFolder.Children.Add(item);
+                    
                     MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 }
@@ -400,6 +400,7 @@ namespace DiskDisplay
                 {
                     FileSystem.RecycleBin.Remove(item);
                     item.SetRecycleBin(false);
+                    item.SetVisible(true);
                     listView1.Items.Remove(item.GetListViewItem());
                     if (item.IsFAT32)
                     {

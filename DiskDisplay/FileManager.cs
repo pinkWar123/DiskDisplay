@@ -31,9 +31,20 @@ class FileManager
     protected TreeNode CurrentNode = new TreeNode();
     protected ListViewItem CurrentItem = new ListViewItem();
     protected bool isRecycleBin = false;
+    protected bool isVisible = true;
     protected string Path = "";
     public FileManager() {
         
+    }
+
+    public void SetVisible(bool visible)
+    {
+        isVisible = visible;
+    }
+
+    public bool GetVisible()
+    {
+        return isVisible;
     }
 
     public void SetNodeText(string text)

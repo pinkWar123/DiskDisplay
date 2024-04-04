@@ -32,6 +32,7 @@ class Directory : FileManager
     public override int GetSize()
     {
         var totalSize = 0;
+        if(Children != null && Children.Count > 0)
         foreach (var child in Children)
         {
             totalSize += child.GetSize();
@@ -69,33 +70,11 @@ class Directory : FileManager
         }
     }
 
-    public override void PopulateListView(ref ListView ListView)
-    {
-        base.PopulateListView(ref ListView);
-        if (FileListView.IsLastDirectory())
-        {
-            ++FileListView.CurrentHistoryIndex;
-            FileListView.History.Add(this);
-        }
-        else
-        {
-            if (this == FileListView.History[FileListView.CurrentHistoryIndex + 1])
-            {
-                ++FileListView.CurrentHistoryIndex;
-            }
-            else
-            {
-                int startIndex = FileListView.CurrentHistoryIndex + 1;
-                int count = FileListView.History.Count - startIndex;
-                FileListView.History.RemoveRange(startIndex, count);
-                FileListView.History.Add(this);
-            }
-        }
-        //FileListView.RenderListView(ref ListView);
-    }
+    
 
     public override void Populate()
     {
+        Console.WriteLine(MainName);
         CurrentNode.ImageKey = IsFile ? "fileIcon" : "folderIcon";
         CurrentNode.SelectedImageKey = IsFile ? "fileIcon" : "folderIcon";
         CurrentNode.Tag = this;
@@ -106,7 +85,7 @@ class Directory : FileManager
             foreach (var child in Children)
             {
                 TreeNode node = new TreeNode();
-                child.SetNode(node);
+                child.SetNode(node); 
                 child.Populate();
                 child.SetParent(this);
                 CurrentNode.Nodes.Add(node);

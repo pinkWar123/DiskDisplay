@@ -376,34 +376,26 @@ class FAT32 : FileSystem
         {
             byte[] temp = EntryQueue[0];
             EntryQueue.RemoveAt(0);
+            FileManager tempfile;
             if (temp[0x0B] == 0x0F)
+                tempfile = ProcessLongName(fileStream, ref EntryQueue, temp);
+            else tempfile = ProcessShortName(fileStream, temp);
+            if (temp[0x00] == 0xE5)
             {
-                FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp);
-                if (temp[0x00] == 0xE5)
+                if (!IsRootFolderDeleted)
                 {
-                    if (!IsRootFolderDeleted)
-                        RecycleBin.Add(tempfile);
-                    else
-                        FileRoot.Add(tempfile);
+                    RecycleBin.Add(tempfile);
+                    tempfile.SetRecycleBin(true);
                 }
-                else FileRoot.Add(tempfile);
+                tempfile.SetVisible(false);
+                FileRoot.Add(tempfile);
             }
-            else
-            {
-                FileManager tempfile = ProcessShortName(fileStream, temp);
-                if (temp[0x00] == 0xE5)
-                {
-                    if (!IsRootFolderDeleted)
-                        RecycleBin.Add(tempfile);
-                    else
-                        FileRoot.Add(tempfile);
-                }
-                else FileRoot.Add(tempfile);
-            }
-
+            else FileRoot.Add(tempfile);
         }
-
     }
+
+
+
 
     private FileManager ProcessLongName(FileStream fileStream, ref List<byte[]> EntryQueue, byte[] temp)
     {
