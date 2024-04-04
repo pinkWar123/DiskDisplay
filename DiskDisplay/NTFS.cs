@@ -30,7 +30,28 @@ class NTFS : FileSystem
         this.DiskName = Diskname;
         this.FirstSector = firstsector;
     }
+    static public bool IsNTFS(string name)
+    {
+        try
+        {
+            string filename = @"\\.\" + name;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            {
+                byte[] bytes = new byte[10];
+                filestream.Read(bytes, 0, bytes.Length);
 
+                string type = Encoding.ASCII.GetString(bytes, 0x03, 4);
+
+                if(type == "NTFS")
+                    return true;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.ToString());
+        }
+        return false;
+    }
     public override List<FileManager> ReadFileSystem()
     {
         try

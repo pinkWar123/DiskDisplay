@@ -17,7 +17,11 @@ class FileSystem
     {
         this.DriveName = name;
     }
-    
+    static public FileSystem Detect_FileSystem(string name)
+    {
+
+        return null;
+    }
     // read drive and return list of file
     virtual public List<FileManager> ReadFileSystem()
     {
