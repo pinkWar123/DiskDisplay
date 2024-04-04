@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Directory.cs" />
+    <Compile Include="Disk.cs" />
     <Compile Include="FAT32.cs" />
     <Compile Include="File.cs" />
     <Compile Include="FileListView.cs" />

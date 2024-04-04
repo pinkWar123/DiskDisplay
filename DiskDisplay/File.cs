@@ -6,7 +6,7 @@ using System.Text;
 class File : FileManager
 {
     public File() {
-        Parent = new FileManager();
+        //Parent = new FileManager();
     }
     public override int GetSize() { return (int)FileSize; }
 

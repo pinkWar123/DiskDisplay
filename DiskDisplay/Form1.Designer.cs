@@ -92,10 +92,10 @@
             // 
             // txtPath
             // 
-            this.txtPath.Location = new System.Drawing.Point(361, 63);
+            this.txtPath.Location = new System.Drawing.Point(389, 63);
             this.txtPath.Margin = new System.Windows.Forms.Padding(4);
             this.txtPath.Name = "txtPath";
-            this.txtPath.Size = new System.Drawing.Size(1340, 22);
+            this.txtPath.Size = new System.Drawing.Size(953, 22);
             this.txtPath.TabIndex = 5;
             this.txtPath.TextChanged += new System.EventHandler(this.txtPath_TextChanged);
             // 
@@ -135,7 +135,7 @@
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(389, 127);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(953, 699);
+            this.listView1.Size = new System.Drawing.Size(953, 637);
             this.listView1.TabIndex = 8;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
@@ -151,12 +151,12 @@
             this.recycleBinContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.restoreToolStripMenuItem});
             this.recycleBinContextMenu.Name = "recycleBinContextMenu";
-            this.recycleBinContextMenu.Size = new System.Drawing.Size(211, 56);
+            this.recycleBinContextMenu.Size = new System.Drawing.Size(129, 28);
             // 
             // restoreToolStripMenuItem
             // 
             this.restoreToolStripMenuItem.Name = "restoreToolStripMenuItem";
-            this.restoreToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.restoreToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.restoreToolStripMenuItem.Text = "Restore";
             this.restoreToolStripMenuItem.Click += new System.EventHandler(this.restoreToolStripMenuItem_Click);
             // 

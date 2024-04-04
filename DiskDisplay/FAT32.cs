@@ -19,8 +19,7 @@ class FAT32 : FileSystem
     public UInt32 SectorPerFAT;
     public UInt32 StartingClusterOfRDET;
     public string FATType;
-    private UInt32 SeedId = 0x05;
-
+    Dictionary<UInt16, List<byte>> StartingCLuter_FirstByteEntry = new Dictionary<UInt16, List<byte>>(); 
 
     //--------------------------------------------------------------
 
@@ -40,6 +39,11 @@ class FAT32 : FileSystem
     {
         DriveName = file;
     }
+    public FAT32(UInt32 firstSector, string Diskname)
+    {
+        this.FirstSector = firstSector;
+        this.DiskName = Diskname;
+    }
     ~FAT32() { }
 
     public override List<FileManager> ReadFileSystem()
@@ -55,7 +59,7 @@ class FAT32 : FileSystem
             ReadBoostSector(filestream);
             ReadFAT1(filestream);
             List<FileManager> files = new List<FileManager>();
-            ReadDET(filestream, StartingClusterOfRDET, ref files,SeedId);
+            ReadDET(filestream, StartingClusterOfRDET, ref files, false);
             return files;
         }
     }
@@ -90,46 +94,29 @@ class FAT32 : FileSystem
 
         return "";
     }
-    private bool ChangeFat(FileStream filestream, UInt32 Offset, List<UInt32> ListofCLuster, Int32 value)
-    {
-        byte[] bytes;
-        for (int i = 0; i < ListofCLuster.Count; i++)
-        {
-            if (value != 0x00)
-                bytes = BitConverter.GetBytes(value);
-            else
-            {
-                if (i == ListofCLuster.Count)
-                    bytes = BitConverter.GetBytes(0xFFFFFFFF);
-                else
-                    bytes = BitConverter.GetBytes(ListofCLuster[i]);
-            }
-
-            filestream.Write(bytes, (int)(ListofCLuster[i] - 2) * 4 + (int)Offset, bytes.Length);
-        }
-        return true;
-    }
-    private bool ChangeEntry(FileStream filestream, FileManager file)
-    {
-        return true;
-    }
     public override bool DeleteFile(FileManager file)
     {
-        if (file.IsFAT32 == false)
-            return false;
-        string filename = @"\\.\" + DriveName;
-        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        try
         {
-            byte[] value = { 0xE5 };
-            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            if (file.IsFAT32 == false)
+                return false;
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
-                return true;
+                byte[] value = { 0xE5 };
+                if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, true))
+                {
+                    return true;
+                }
             }
         }
-
+        catch
+        {
+            return false;
+        }
         return false;
     }
-    private bool ChangeEntryWithValue(FileStream fileStream, FileManager file, UInt32 StartingCluter, byte[] value)
+    private bool ChangeEntryWithValue(FileStream fileStream, FileManager file, UInt32 StartingCluter, byte[] value, bool isDelete)
     {
         List<UInt32> ListOfCluster = FindListOfClusters(StartingCluter);
         byte[] ClusterByte = new byte[0];
@@ -146,6 +133,7 @@ class FAT32 : FileSystem
         byte[] temp = new byte[32];
 
         int total = 0;
+        
         while (total < SectorPerCluster * BytesPerSector * ListOfCluster.Count)
         {
             Array.Copy(ClusterByte, total, temp, 0, 32);
@@ -178,23 +166,54 @@ class FAT32 : FileSystem
             if (!longNameFile)
                 name = Encoding.ASCII.GetString(temp, 0, 8);
             bool flag = false;
+            byte[] k = { 0xE5 };
             if (file == null)
-                flag = true;
-            else if (name == file.MainName && (file is Directory || file.ExtendedName == Encoding.ASCII.GetString(temp, 0x08, 3))
+                flag = true;     
+            else if ((name == file.MainName || name.Contains(file.MainName.Substring(1))) && (file is Directory || file.ExtendedName == Encoding.ASCII.GetString(temp, 0x08, 3))
                                            && BitConverter.ToUInt16(temp, 0x1A) == file.StartCluster)
                 flag = true;
 
             if (flag)
             {
                 int backuptotal = total;
-                while (count > 0)
+                List<byte> FirstByteOfEntry = new List<byte>();
+                int index = 0;
+                while (index < count)
                 {
                     total -= 32;
-                    ClusterByte[total] = value[0];
-                    count--;
+                    if(isDelete)
+                    {
+                        byte firstbyte = ClusterByte[total];
+                        ClusterByte[total] = 0xE5;
+                        FirstByteOfEntry.Add(firstbyte);
+                    }
+                    else
+                    {
+                        if(name.Contains(".      ") || name.Contains("       "))
+                            ClusterByte[total] = 0x2E;
+                        else
+                        {
+                            if (StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)))
+                            {
+                                ClusterByte[total] = StartingCLuter_FirstByteEntry[BitConverter.ToUInt16(temp, 0x1A)][index];
+
+                                if(index == count - 1)
+                                    StartingCLuter_FirstByteEntry.Remove(BitConverter.ToUInt16(temp, 0x1A));
+                            }
+                            else
+                                ClusterByte[total] = 0x48; 
+
+                        }
+
+                    }
+                    index++;
                 }
+                if(!StartingCLuter_FirstByteEntry.ContainsKey(BitConverter.ToUInt16(temp, 0x1A)) && isDelete)
+                    StartingCLuter_FirstByteEntry.Add(BitConverter.ToUInt16(temp, 0x1A), FirstByteOfEntry);
+                
                 total = backuptotal;
             }
+
             //Check if it is a Directory --> Change in its children
             if (!CheckBitAt(temp[0x0B], 5) && CheckBitAt(temp[0x0B], 4) && !CheckBitAt(temp[0x0B], 1) 
                 && !name.Contains(".       ") && !name.Contains("..      ")
@@ -203,9 +222,9 @@ class FAT32 : FileSystem
                 UInt16 s = BitConverter.ToUInt16(temp, 0x1A);
                 bool HasDelete = false;
                 if (flag)
-                    HasDelete = ChangeEntryWithValue(fileStream, null, s, value);
+                    HasDelete = ChangeEntryWithValue(fileStream, null, s, value, isDelete);
                 else // find in it's children
-                    HasDelete = ChangeEntryWithValue(fileStream, file, s, value);
+                    HasDelete = ChangeEntryWithValue(fileStream, file, s, value, isDelete);
                 if (HasDelete)
                     flag = true;
 
@@ -235,17 +254,26 @@ class FAT32 : FileSystem
     }
     public override bool RestoreFile(FileManager file)
     {
-        if (file.IsFAT32 == false)
-            return false;
-        string filename = @"\\.\" + DriveName;
-        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
+        try
         {
-            byte[] value = { 0x48 };
-            if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value))
+            if (file.IsFAT32 == false)
+                return false;
+            string filename = @"\\.\" + DriveName;
+            using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
-                return true;
+                byte[] value = { 0x48 };
+                if (ChangeEntryWithValue(filestream, file, StartingClusterOfRDET, value, false))
+                {
+                    return true;
+                }
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            return false;
+        }
+        
 
         return false;
     }
@@ -285,17 +313,6 @@ class FAT32 : FileSystem
         }
     }
 
-    // This function will determie if This File is Archive
-    //private bool IsArchive(byte data)
-    //{
-    //    byte mask = (byte)(1 << 5);
-    //    // check if Archive bit(bit 5) is 1
-    //    if ((data & mask) != 0)
-    //    {
-    //        return true;
-    //    }
-    //    return false;
-    //}
     private bool CheckBitAt(byte data, int k)
     {
         byte mask = (byte)(1 << k);
@@ -328,7 +345,7 @@ class FAT32 : FileSystem
     }
 
     // This Function will Read all FIle in RDET and SDET and return list of FileManager
-    private void ReadDET(FileStream fileStream, UInt32 StartingCluster, ref List<FileManager> FileRoot, UInt32 RootID)
+    private void ReadDET(FileStream fileStream, UInt32 StartingCluster, ref List<FileManager> FileRoot, bool IsRootFolderDeleted)
     {
         List<UInt32> ListofCluster = FindListOfClusters(StartingCluster);
         List<byte[]> EntryQueue = new List<byte[]>();
@@ -361,14 +378,26 @@ class FAT32 : FileSystem
             EntryQueue.RemoveAt(0);
             if (temp[0x0B] == 0x0F)
             {
-                FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp, RootID);
-                if (temp[0x00] == 0xE5 && tempfile.RootID == 5) RecycleBin.Add(tempfile);
+                FileManager tempfile = ProcessLongName(fileStream, ref EntryQueue, temp);
+                if (temp[0x00] == 0xE5)
+                {
+                    if (!IsRootFolderDeleted)
+                        RecycleBin.Add(tempfile);
+                    else
+                        FileRoot.Add(tempfile);
+                }
                 else FileRoot.Add(tempfile);
             }
             else
             {
-                FileManager tempfile = ProcessShortName(fileStream, temp, RootID);
-                if (temp[0x00] == 0xE5 && tempfile.RootID == 5) RecycleBin.Add(tempfile);
+                FileManager tempfile = ProcessShortName(fileStream, temp);
+                if (temp[0x00] == 0xE5)
+                {
+                    if (!IsRootFolderDeleted)
+                        RecycleBin.Add(tempfile);
+                    else
+                        FileRoot.Add(tempfile);
+                }
                 else FileRoot.Add(tempfile);
             }
 
@@ -376,7 +405,7 @@ class FAT32 : FileSystem
 
     }
 
-    private FileManager ProcessLongName(FileStream fileStream, ref List<byte[]> EntryQueue, byte[] temp, UInt32 RootID)
+    private FileManager ProcessLongName(FileStream fileStream, ref List<byte[]> EntryQueue, byte[] temp)
     {
         List<string> filenamefragment = new List<string>();
         while (true)
@@ -396,7 +425,7 @@ class FAT32 : FileSystem
             EntryQueue.RemoveAt(0);
         }
         
-        FileManager tempfile = ProcessShortName(fileStream, temp, RootID);
+        FileManager tempfile = ProcessShortName(fileStream, temp);
         tempfile.MainName = "";
         
         for (int i = filenamefragment.Count - 1; i >= 0; i--)
@@ -406,25 +435,20 @@ class FAT32 : FileSystem
 
         return tempfile;
     }
-    private FileManager ProcessShortName(FileStream fileStream, byte[] temp, UInt32 RootID)
+    private FileManager ProcessShortName(FileStream fileStream, byte[] temp)
     {
         if (CheckBitAt(temp[0x0B], 5))
         {
-            File tempfile = new File();
-            tempfile.ID = SeedId++;
-            tempfile.RootID = RootID;
+            File tempfile = new File();     
             tempfile.CloneData(temp);
-
             return tempfile;
         }
 
         Directory tempdirectory = new Directory();
         tempdirectory.CloneData(temp);
-        tempdirectory.ID = SeedId++;
-        tempdirectory.RootID = RootID;
         if (tempdirectory.MainName != ".       " && tempdirectory.MainName != "..      ")
         {
-            ReadDET(fileStream, tempdirectory.StartCluster, ref tempdirectory.Children, tempdirectory.ID);
+            ReadDET(fileStream, tempdirectory.StartCluster, ref tempdirectory.Children, (temp[0] == 0xE5));
         }
         return tempdirectory;
 
