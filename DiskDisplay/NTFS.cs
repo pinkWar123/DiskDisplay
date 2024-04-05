@@ -427,6 +427,13 @@ static class MFTEntry
 
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
     }
+    private static int CheckBitAt(Int32 data, int k)
+    {
+        int mask = 1 << k;
+        if ((data & mask) != 0)
+            return 1;
+        return 0;
+    }
     static private Int64 GetNumberWithKByte(byte[] entry, UInt32 Offset, int k)
     {
         byte[] temp = new byte[8];
@@ -462,6 +469,7 @@ static class MFTEntry
         UInt32 SizeOfContent = 0;
         UInt16 ContentOffset = 0;
         byte IsNon_Resident = 0x00;
+        Int32 FileFlag = 0;
         string filename = "";
         string content = "";
 
@@ -498,8 +506,8 @@ static class MFTEntry
             else if(AttributeType == 0x30) {
                 RootID = (UInt32)GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset, 6);
                 filename = Encoding.Unicode.GetString(entry,AttributeOffset + ContentOffset + 0x42, 2*entry[AttributeOffset + ContentOffset + 0x40]);
-                
-                if (filename[0] == '$' || filename.Length == 0)
+                FileFlag = BitConverter.ToInt32(entry, AttributeOffset + ContentOffset + 0x38);
+                if (filename[0] == '$' || filename.Length == 0 || CheckBitAt(FileFlag, 1) == 1 || CheckBitAt(FileFlag, 2) == 1)
                 {
                     Console.WriteLine("----------");
                     Console.WriteLine("File name: " + filename);
@@ -578,18 +586,20 @@ static class MFTEntry
         }
      
 
-        if(status == 0x01)
+        if(CheckBitAt(FileFlag, 5) == 1)
         {
             File result = new File();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident, content);
             return result;
         }
-        else
+        else if(CheckBitAt(FileFlag, 28) == 1)
         {
             Directory result = new Directory();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident,  content);
             return result;
         }
+
+        return null;
     }
 
 
