@@ -47,6 +47,16 @@ class FileManager
         return isVisible;
     }
 
+    public void SetPath(string path)
+    {
+        this.Path = path;
+    }
+
+    public string GetPath()
+    {
+        return this.Path;
+    }
+
     public void SetNodeText(string text)
     {
         CurrentNode.Text = text;

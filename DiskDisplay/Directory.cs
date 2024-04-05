@@ -77,6 +77,7 @@ class Directory : FileManager
             {
                 TreeNode node = new TreeNode();
                 child.SetNode(node);
+                child.SetPath(this.Path + "/" + child.MainName);
                 child.Populate();
                 child.SetParent(this);
                 CurrentNode.Nodes.Add(node);

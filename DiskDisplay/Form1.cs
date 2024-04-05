@@ -17,8 +17,8 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("F:");
-        private NTFS ntfs = new NTFS("E:");
+        private FAT32 fat32 = new FAT32("H:");
+        private NTFS ntfs = new NTFS("G:");
         private bool IsUserInteraction = false;
         private Directory Fat32Folder = new Directory();
         private Directory NTFSFolder = new Directory();
@@ -48,20 +48,10 @@ namespace DiskDisplay
             SystemFolder.Children.Add(NTFSFolder);
             SystemFolder.Children.Add(RecycleBin);
             SystemFolder.Populate();
-            foreach (var folder in SystemFolder.Children)
-            {
-                folderTree.Nodes.Add(folder.GetNode());
-                listView1.Items.Add(folder.GetListViewItem());
-                if(folder == SystemFolder.Children[SystemFolder.Children.Count -1 ])
-                {
-                    folder.GetListViewItem().Tag = folder;
-                }
-            }
-
-            NTFSFolder.SetItemText("E:");
-            NTFSFolder.SetNodeText("E:");
-            Fat32Folder.SetItemText("F:");
-            Fat32Folder.SetNodeText("F:");
+            NTFSFolder.SetItemText("H:");
+            NTFSFolder.SetNodeText("H:");
+            Fat32Folder.SetItemText("G:");
+            Fat32Folder.SetNodeText("G:");
             RecycleBin.SetItemText("Recycle Bin");
             RecycleBin.SetNodeText("Recycle Bin");
             RecycleBin.SetIcon("recycleBinIcon", 2);
@@ -69,9 +59,18 @@ namespace DiskDisplay
             NTFSFolder.MainName = "E:";
             Fat32Folder.MainName = "F:";
             RecycleBin.MainName = "Recycle Bin";
+            foreach (var folder in SystemFolder.Children)
+            {
+                folderTree.Nodes.Add(folder.GetNode());
+                listView1.Items.Add(folder.GetListViewItem());
+                folder.SetPath(folder.MainName);
+                if(folder == SystemFolder.Children[SystemFolder.Children.Count -1 ])
+                {
+                    folder.GetListViewItem().Tag = folder;
+                }
+            }
 
-            listView1.MouseDoubleClick += listView1_MouseDoubleClick;
-            listView1.MouseClick += listView1_MouseUp;
+            
 
             
         }
@@ -90,27 +89,35 @@ namespace DiskDisplay
 
 
         }
+
+        private void ShowFileContent(string content)
+        {
+            FileWindow f2 = new FileWindow();
+            f2.ShowFileContent(content);
+        }
+
+        private void TreeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            var selectedItem = e.Node;
+            if(selectedItem != null)
+            {
+                if(selectedItem.Tag is File)
+                {
+                    var selectedFile = selectedItem.Tag as File;
+                    ShowFileContent(selectedFile.content_President);
+                }
+            }
+        }
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode selecteditem = e.Node;
             if (selecteditem != null)
             {
-                // Your logic here
-                // Do something with the selected item
-                if (selecteditem.Tag is File)
-                {
-                    var selectedFile = selecteditem.Tag as File;
-                    MessageBox.Show(selectedFile.content_President);
-                }
-                else if (selecteditem.Tag is Directory )
+                if (selecteditem.Tag is Directory )
                 {
                     if (IsUserInteraction) 
                         return;
                     var selectedFolder = selecteditem.Tag as Directory;
-                    if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
-                        folderTree.SelectedNode.BackColor = Color.White;
-                    folderTree.SelectedNode = selectedFolder.GetNode();
-                    folderTree.SelectedNode.BackColor = Color.Yellow;
                     if (FileListView.IsLastDirectory())
                     {
                         ++FileListView.CurrentHistoryIndex;
@@ -127,7 +134,7 @@ namespace DiskDisplay
                         }
                             ++FileListView.CurrentHistoryIndex;
                     }
-                    FileListView.RenderListView(ref listView1);
+                    FileListView.RenderListView(ref listView1, filePathTextBox);
 
                 }
 
@@ -141,7 +148,7 @@ namespace DiskDisplay
             {
                 if(fbd.ShowDialog()==DialogResult.OK)
                 {
-                    txtPath.Text = fbd.SelectedPath;
+                    filePathTextBox.Text = fbd.SelectedPath;
                 }
             }
         }
@@ -152,7 +159,7 @@ namespace DiskDisplay
             {
                 IsUserInteraction = true;
                 FileListView.CurrentHistoryIndex--;
-                FileListView.RenderListView(ref listView1);
+                FileListView.RenderListView(ref listView1, filePathTextBox);
                 IsUserInteraction = false;
 
             }
@@ -164,7 +171,7 @@ namespace DiskDisplay
             {
                 IsUserInteraction = true;
                 FileListView.CurrentHistoryIndex++;
-                FileListView.RenderListView(ref listView1);
+                FileListView.RenderListView(ref listView1, filePathTextBox);
                 IsUserInteraction = false;
 
             }
@@ -256,7 +263,7 @@ namespace DiskDisplay
                             ++FileListView.CurrentHistoryIndex;
                         }
                     }
-                    FileListView.RenderListView(ref listView1, isRecycleBinFolder);
+                    FileListView.RenderListView(ref listView1, filePathTextBox, isRecycleBinFolder);
                     IsUserInteraction = false;
 
                 }
