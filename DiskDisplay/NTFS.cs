@@ -130,13 +130,17 @@ class NTFS : FileSystem
                 using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
                 {
                     byte[] data = new byte[BytePerSector * SectorPerCluster];
-                    Int64 Offset = OffsetWithCluster((UInt64)(tempfile.StartCluster));
-                    filestream.Seek(Offset, SeekOrigin.Begin);
-                    while(size > 0)
+                    for(int i = 0; i < file.ListDataruin.Count; i++)
                     {
-                        filestream.Read(data, 0, (int)BytePerSector * SectorPerCluster);
-                        result += Encoding.UTF8.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
-                        size -= data.Length;
+                        filestream.Seek(OffsetWithCluster(file.ListDataruin[i].Item2), SeekOrigin.Begin);
+                        for(int j = 0; j <  file.ListDataruin[i].Item1; j++)
+                        {
+                            filestream.Read(data, 0, (int)BytePerSector * SectorPerCluster);
+                            result += Encoding.UTF8.GetString(data, 0, (int)((data.Length <= size) ? data.Length : (int)size));
+                            size -= data.Length;
+                            if (size <= 0)
+                                break;
+                        }
                     }
                 }
                 return result;
@@ -423,7 +427,7 @@ static class MFTEntry
 
         return BitConverter.ToInt32(entry, 0x00) != 0x00 && Encoding.ASCII.GetString(entry, 0, 4) != "BAAD";
     }
-    static private UInt64 GetNumberWithKByte(byte[] entry, UInt32 Offset, int k)
+    static private Int64 GetNumberWithKByte(byte[] entry, UInt32 Offset, int k)
     {
         byte[] temp = new byte[8];
 
@@ -436,7 +440,7 @@ static class MFTEntry
             temp[i] = 0x00;
         }
 
-        return BitConverter.ToUInt64(temp, 0);
+        return BitConverter.ToInt64(temp, 0);
     }
     public static FileManager MFTEntryProcess(byte[] entry, bool updateRecycleBin = false)
     {
@@ -461,8 +465,9 @@ static class MFTEntry
         string filename = "";
         string content = "";
 
-        UInt32 StartingClusterOfContent = 0;
-        UInt32 NumberOfContigousCluster = 0;
+        Int32 StartingClusterOfContent = 0;
+        Int32 NumberOfContigousCluster = 0;
+        List<Tuple<UInt32, UInt32>> dataRuin = new List<Tuple<UInt32, UInt32>>();
 
         // Read Attribute-------------------------------
         while (AttributeOffset <= 1024)
@@ -472,13 +477,14 @@ static class MFTEntry
                 break;
             
             UInt32 AttributeSize = BitConverter.ToUInt32(entry, AttributeOffset + 0x04);
-            IsNon_Resident = entry[AttributeOffset + 0x08];
+            byte IsNonResidentByte = entry[AttributeOffset + 0x08];
             ContentOffset = BitConverter.ToUInt16(entry, AttributeOffset + 0x14);
-            if (IsNon_Resident == 0x00)
+
+            if (IsNonResidentByte == 0x00)
             {
                 SizeOfContent = BitConverter.ToUInt32(entry, AttributeOffset + 0x10);
             }
-            else if(IsNon_Resident == 0x01)
+            else if(IsNonResidentByte == 0x01)
             {
                 SizeOfContent = BitConverter.ToUInt32(entry, AttributeOffset + 0x30);
                 ContentOffset = BitConverter.ToUInt16(entry, AttributeOffset + 0x20);
@@ -490,7 +496,7 @@ static class MFTEntry
                 Modifiedtime = DateTimeWithNanoSecond(entry, AttributeOffset + ContentOffset + 0x08);
             }
             else if(AttributeType == 0x30) {
-                RootID = GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset, 6);
+                RootID = (UInt32)GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset, 6);
                 filename = Encoding.Unicode.GetString(entry,AttributeOffset + ContentOffset + 0x42, 2*entry[AttributeOffset + ContentOffset + 0x40]);
                 
                 if (filename[0] == '$' || filename.Length == 0)
@@ -535,19 +541,35 @@ static class MFTEntry
                 FileSize += SizeOfContent;
                 if(filename.EndsWith(".txt"))
                 {
-                    if (IsNon_Resident == 0x00)
+                    if (IsNonResidentByte == 0x00)
                     {
                         content = Encoding.UTF8.GetString(entry, AttributeOffset + ContentOffset, (int)SizeOfContent);
                     }
-                    else if (IsNon_Resident == 0x01)
+                    else if (IsNonResidentByte == 0x01)
                     {
                         // Read Runlist
-                        byte firstdatarun = entry[AttributeOffset + ContentOffset];
-                        byte firstFourBytes = (byte)(firstdatarun >> 4);
-                        byte lastFourBytes = (byte)(firstdatarun & 0b00001111);
+                        IsNon_Resident = IsNonResidentByte;
+                        int index = 0;
+                        while(true)
+                        {
+                            byte firstdatarun = entry[AttributeOffset + ContentOffset + index];
+                            if (firstdatarun == 0x00)
+                                break;
+                            byte firstFourBytes = (byte)(firstdatarun >> 4);
+                            byte lastFourBytes = (byte)(firstdatarun & 0b00001111);
                         
-                        StartingClusterOfContent = (UInt32)GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset + lastFourBytes + 1, firstFourBytes);       
-                        NumberOfContigousCluster = (UInt32)GetNumberWithKByte(entry, (uint)AttributeOffset + ContentOffset + 1, lastFourBytes);
+                            StartingClusterOfContent = (Int32)GetNumberWithKByte(entry, (uint)(AttributeOffset + ContentOffset + lastFourBytes + index + 1), firstFourBytes);       
+                            NumberOfContigousCluster = (Int32)GetNumberWithKByte(entry, (uint)(AttributeOffset + ContentOffset + index + 1), lastFourBytes);
+                            if(index != 0 || dataRuin.Count != 0)
+                            {
+                                StartingClusterOfContent = (Int32)dataRuin[dataRuin.Count - 1].Item2 + StartingClusterOfContent;
+                            }
+                            Tuple<UInt32, UInt32> t = Tuple.Create((UInt32)NumberOfContigousCluster, (UInt32)StartingClusterOfContent);
+
+                            dataRuin.Add(t);
+                            
+                            index += (firstFourBytes + lastFourBytes + 1);
+                        }
                     }
                 }
                 
@@ -559,13 +581,13 @@ static class MFTEntry
         if(status == 0x01)
         {
             File result = new File();
-            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
+            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident, content);
             return result;
         }
         else
         {
             Directory result = new Directory();
-            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident,  content);
+            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident,  content);
             return result;
         }
     }

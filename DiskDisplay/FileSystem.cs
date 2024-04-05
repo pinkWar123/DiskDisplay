@@ -19,7 +19,11 @@ class FileSystem
     }
     static public FileSystem Detect_FileSystem(string name)
     {
-
+        if (FAT32.IsFat32(name))
+            return new FAT32(name);
+        else if(NTFS.IsNTFS(name))
+            return new NTFS(name);
+        
         return null;
     }
     // read drive and return list of file
