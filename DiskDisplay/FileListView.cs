@@ -13,7 +13,7 @@ namespace DiskDisplay
         public static int CurrentHistoryIndex = 0;
         public static bool IsCurrentlyProcessing = false;
 
-        public static void RenderListView(ref ListView listView)
+        public static void RenderListView(ref ListView listView, TextBox textBox, bool isRecycleBin = false)
         {
             if (IsCurrentlyProcessing) return;
 
@@ -22,9 +22,13 @@ namespace DiskDisplay
             Console.WriteLine("Current index: " + FileListView.CurrentHistoryIndex);
             Console.WriteLine("History length: " + FileListView.History.Count);
             if (History[CurrentHistoryIndex].Children != null)
-            foreach (var child in History[CurrentHistoryIndex].Children)
             {
-                listView.Items.Add(child.GetListViewItem());
+                textBox.Text = History[CurrentHistoryIndex].GetPath();
+                foreach (var child in History[CurrentHistoryIndex].Children)
+                {
+                    if (isRecycleBin || child.GetVisible())
+                        listView.Items.Add(child.GetListViewItem());
+                }
             }
 
             listView.SelectedItems.Clear();

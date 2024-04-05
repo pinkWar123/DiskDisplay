@@ -17,11 +17,11 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("F:");
-        private NTFS ntfs = new NTFS("E:");
+        private FAT32 fat32 = new FAT32("H:");
+        private NTFS ntfs = new NTFS("G:");
         private bool IsUserInteraction = false;
-        private Directory RootFolder = new Directory();
-        private Directory RootFolder1 = new Directory();
+        private Directory Fat32Folder = new Directory();
+        private Directory NTFSFolder = new Directory();
         private bool IsRecycleBin = false;
         public Form1()
         {
@@ -32,42 +32,45 @@ namespace DiskDisplay
             List<FileManager> fat32Files = new List<FileManager>();
             fat32Files = fat32.ReadFileSystem();
 
-            RootFolder.Children = fat32Files;
+            Fat32Folder.Children = fat32Files;
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
 
-            RootFolder1.Children = files;
+
+            NTFSFolder.Children = files;
 
             var RecycleBin = new Directory();
             RecycleBin.Children = FileSystem.RecycleBin;
             
 
             var SystemFolder = new Directory() ;
-            SystemFolder.Children.Add(RootFolder);
-            SystemFolder.Children.Add(RootFolder1);
+            SystemFolder.Children.Add(Fat32Folder);
+            SystemFolder.Children.Add(NTFSFolder);
             SystemFolder.Children.Add(RecycleBin);
             SystemFolder.Populate();
+            NTFSFolder.SetItemText("H:");
+            NTFSFolder.SetNodeText("H:");
+            Fat32Folder.SetItemText("G:");
+            Fat32Folder.SetNodeText("G:");
+            RecycleBin.SetItemText("Recycle Bin");
+            RecycleBin.SetNodeText("Recycle Bin");
+            RecycleBin.SetIcon("recycleBinIcon", 2);
+            FileListView.History.Add(SystemFolder);
+            NTFSFolder.MainName = "E:";
+            Fat32Folder.MainName = "F:";
+            RecycleBin.MainName = "Recycle Bin";
             foreach (var folder in SystemFolder.Children)
             {
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
+                folder.SetPath(folder.MainName);
                 if(folder == SystemFolder.Children[SystemFolder.Children.Count -1 ])
                 {
                     folder.GetListViewItem().Tag = folder;
                 }
             }
 
-            RootFolder1.SetItemText("E:");
-            RootFolder1.SetNodeText("E:");
-            RootFolder.SetItemText("F:");
-            RootFolder.SetNodeText("F:");
-            RecycleBin.SetItemText("Recycle Bin");
-            RecycleBin.SetNodeText("Recycle Bin");
-            RecycleBin.SetIcon("recycleBinIcon", 2);
-            FileListView.History.Add(SystemFolder);
-
-            listView1.MouseDoubleClick += listView1_MouseDoubleClick;
-            listView1.MouseClick += listView1_MouseUp;
+            
 
             
         }
@@ -81,32 +84,40 @@ namespace DiskDisplay
             listView1.Columns.Add("Size", 100);
             listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
-            
+
+            Console.WriteLine("Recycle bin: " + FileSystem.RecycleBin.Count);
 
 
+        }
 
+        private void ShowFileContent(string content)
+        {
+            FileWindow f2 = new FileWindow();
+            f2.ShowFileContent(content);
+        }
+
+        private void TreeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            var selectedItem = e.Node;
+            if(selectedItem != null)
+            {
+                if(selectedItem.Tag is File)
+                {
+                    var selectedFile = selectedItem.Tag as File;
+                    ShowFileContent(selectedFile.content_President);
+                }
+            }
         }
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
             TreeNode selecteditem = e.Node;
             if (selecteditem != null)
             {
-                // Your logic here
-                // Do something with the selected item
-                if (selecteditem.Tag is File)
-                {
-                    var selectedFile = selecteditem.Tag as File;
-                    MessageBox.Show(selectedFile.content_President);
-                }
-                else if (selecteditem.Tag is Directory )
+                if (selecteditem.Tag is Directory )
                 {
                     if (IsUserInteraction) 
                         return;
                     var selectedFolder = selecteditem.Tag as Directory;
-                    if (folderTree.SelectedNode != null && folderTree.SelectedNode != selecteditem)
-                        folderTree.SelectedNode.BackColor = Color.White;
-                    folderTree.SelectedNode = selectedFolder.GetNode();
-                    folderTree.SelectedNode.BackColor = Color.Yellow;
                     if (FileListView.IsLastDirectory())
                     {
                         ++FileListView.CurrentHistoryIndex;
@@ -123,7 +134,7 @@ namespace DiskDisplay
                         }
                             ++FileListView.CurrentHistoryIndex;
                     }
-                    FileListView.RenderListView(ref listView1);
+                    FileListView.RenderListView(ref listView1, filePathTextBox);
 
                 }
 
@@ -137,7 +148,7 @@ namespace DiskDisplay
             {
                 if(fbd.ShowDialog()==DialogResult.OK)
                 {
-                    txtPath.Text = fbd.SelectedPath;
+                    filePathTextBox.Text = fbd.SelectedPath;
                 }
             }
         }
@@ -148,7 +159,7 @@ namespace DiskDisplay
             {
                 IsUserInteraction = true;
                 FileListView.CurrentHistoryIndex--;
-                FileListView.RenderListView(ref listView1);
+                FileListView.RenderListView(ref listView1, filePathTextBox);
                 IsUserInteraction = false;
 
             }
@@ -160,7 +171,7 @@ namespace DiskDisplay
             {
                 IsUserInteraction = true;
                 FileListView.CurrentHistoryIndex++;
-                FileListView.RenderListView(ref listView1);
+                FileListView.RenderListView(ref listView1, filePathTextBox);
                 IsUserInteraction = false;
 
             }
@@ -223,6 +234,7 @@ namespace DiskDisplay
                     if (IsUserInteraction) return;
                     IsUserInteraction = true;
                     var selectedFolder = selecteditem.Tag as Directory;
+                    bool isRecycleBinFolder = selectedFolder.MainName == "Recycle Bin";
                     if(selectedFolder.GetListViewItem().Text == "Recycle Bin" && FileListView.CurrentHistoryIndex == 0)
                     {
                         IsRecycleBin = true;
@@ -251,7 +263,7 @@ namespace DiskDisplay
                             ++FileListView.CurrentHistoryIndex;
                         }
                     }
-                    FileListView.RenderListView(ref listView1);
+                    FileListView.RenderListView(ref listView1, filePathTextBox, isRecycleBinFolder);
                     IsUserInteraction = false;
 
                 }
@@ -329,13 +341,12 @@ namespace DiskDisplay
             {
                 if(fat32.DeleteFile(item))
                 {
-                    Console.WriteLine("Current index: " + FileListView.CurrentHistoryIndex);
-                    Console.WriteLine("History length: " + FileListView.History.Count);
                     listView1.Items.Remove(item.GetListViewItem());
-                    var Parent = item.GetParent();
-                    bool result = Parent.Children.Remove(item);
                     item.SetRecycleBin(true);
+                    item.SetVisible(false);
                     FileSystem.RecycleBin.Add(item);
+                    Console.WriteLine(FileSystem.RecycleBin.Count);
+
                     MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 } else
                     MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -346,11 +357,9 @@ namespace DiskDisplay
                 if (ntfs.DeleteFile(item))
                 {
                     listView1.Items.Remove(item.GetListViewItem());
-                    var Parent = item.GetParent();
-                    bool result = Parent.Children.Remove(item);
                     item.SetRecycleBin(true);
+                    item.SetVisible(false);
                     FileSystem.RecycleBin.Add(item);
-                    Console.WriteLine(result);
                     MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
@@ -375,12 +384,9 @@ namespace DiskDisplay
                 {
                     FileSystem.RecycleBin.Remove(item);
                     item.SetRecycleBin(false);
+                    item.SetVisible(true);
                     listView1.Items.Remove(item.GetListViewItem());
-                    if (item.IsFAT32)
-                    {
-                        RootFolder.Children.Add(item);
-                    }
-                    else RootFolder1.Children.Add(item);
+                    
                     MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 }
@@ -396,12 +402,8 @@ namespace DiskDisplay
                 {
                     FileSystem.RecycleBin.Remove(item);
                     item.SetRecycleBin(false);
+                    item.SetVisible(true);
                     listView1.Items.Remove(item.GetListViewItem());
-                    if (item.IsFAT32)
-                    {
-                        RootFolder.Children.Add(item);
-                    }
-                    else RootFolder1.Children.Add(item);
                     MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 }
