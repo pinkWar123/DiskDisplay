@@ -347,6 +347,8 @@ namespace DiskDisplay
                 item.SetRecycleBin(true);
                 item.SetVisible(false);
                 fileSystem.RecycleBin.Add(item);
+                SystemFiles.SystemFolder.Children[0].Children.Add(item);
+                MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -399,6 +401,7 @@ namespace DiskDisplay
             var fileSystem = FileManagerDictionary.FileDictionary[item];
             if(fileSystem.RestoreFile(item))
             {
+                SystemFiles.SystemFolder.Children[0].Children.Remove(item);
                 item.SetRecycleBin(false);
                 item.SetVisible(true);
                 listView1.Items.Remove(item.GetListViewItem());
