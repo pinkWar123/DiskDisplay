@@ -33,6 +33,7 @@ namespace DiskDisplay
 
             listView.SelectedItems.Clear();
             IsCurrentlyProcessing = false;
+            Console.WriteLine(History[CurrentHistoryIndex].GetPath());
         }
 
         public static bool IsLastDirectory()

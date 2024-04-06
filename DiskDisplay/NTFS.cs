@@ -173,6 +173,7 @@ class NTFS : FileSystem
                         if (status == 0x00 || status == 0x02)
                             return false;
 
+                        //entry[0x16] = 0x01;
                         // Read Attribute-------------------------------
                         while (AttributeOffset <= 1024)
                         {
@@ -323,14 +324,14 @@ class NTFS : FileSystem
                                 if (AttributeType == 0x30)
                                 {
                                     byte[] rootIdBytes = BitConverter.GetBytes(MFTEntry.RecyclerId);
-                                    Console.WriteLine(MFTEntry.RecyclerId);
+                                    Console.WriteLine("Recycler ID: " + MFTEntry.RecyclerId);
                                     Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
 
+                                    entry[0x16] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 1] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 2] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 3] = 0x00;
-                                    entry[AttributeOffset + ContentOffset + 0x16] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x06] = 0x01;
                                     if (!DeletedIdInfo.ContainsKey(file.ID))
                                     {
@@ -417,7 +418,7 @@ static class MFTEntry
 
         return BitConverter.ToUInt64(temp, 0);
     }
-    public static FileManager MFTEntryProcess(byte[] entry, bool updateRecycleBin = false)
+    public static FileManager MFTEntryProcess(byte[] entry, bool updateRecycleBin = true)
     {
 
         if (!IsCorrectFile(entry))
@@ -428,7 +429,6 @@ static class MFTEntry
 
         if (status == 0x00 || status == 0x02)
             return null;
-
 
         DateTime Creationtime = DateTime.Now;
         DateTime Modifiedtime = DateTime.Now;
@@ -485,29 +485,29 @@ static class MFTEntry
                     }
                     return null;
                 }
-                /*if(RecyclerId != 0 && RootID == RecyclerId)
+                /*if (RecyclerId != 0 && RootID == RecyclerId)
                 {
                     if (status == 0x01) // File
                     {
                         File result = new File();
                         result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
-                        FileSystem.RecycleBin.Add(result);
+                        if(updateRecycleBin) FileSystem.RecycleBin.Add(result);
                         result.SetRecycleBin(true);
                     }
                     else
                     {
                         Directory result = new Directory();
                         result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
-                        FileSystem.RecycleBin.Add(result);
+                        if (updateRecycleBin) FileSystem.RecycleBin.Add(result);
                         result.SetRecycleBin(true);
                     }
 
-                }
+                }*/
 
-                if(RecycleBinId != 0 && RootID == RecycleBinId)
+                if (RecycleBinId != 0 && RootID == RecycleBinId)
                 {
                     RecyclerId = EntryID;
-                }*/
+                }
             }
             else if(AttributeType == 0x80)
             {
@@ -533,9 +533,9 @@ static class MFTEntry
             }
             AttributeOffset += (UInt16)AttributeSize;
         }
-     
+        
 
-        if(status == 0x01)
+        if (status == 0x01)
         {
             File result = new File();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);

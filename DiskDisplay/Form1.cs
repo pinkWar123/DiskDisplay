@@ -17,8 +17,8 @@ namespace DiskDisplay
 {
     public partial class Form1 : Form
     {
-        private FAT32 fat32 = new FAT32("H:");
-        private NTFS ntfs = new NTFS("G:");
+        private FAT32 fat32 = new FAT32("G:");
+        private NTFS ntfs = new NTFS("Y:");
         private bool IsUserInteraction = false;
         private Directory Fat32Folder = new Directory();
         private Directory NTFSFolder = new Directory();
@@ -48,25 +48,30 @@ namespace DiskDisplay
             SystemFolder.Children.Add(NTFSFolder);
             SystemFolder.Children.Add(RecycleBin);
             SystemFolder.Populate();
-            NTFSFolder.SetItemText("H:");
-            NTFSFolder.SetNodeText("H:");
+            NTFSFolder.SetItemText("Y:");
+            NTFSFolder.SetNodeText("Y:");
             Fat32Folder.SetItemText("G:");
             Fat32Folder.SetNodeText("G:");
             RecycleBin.SetItemText("Recycle Bin");
             RecycleBin.SetNodeText("Recycle Bin");
             RecycleBin.SetIcon("recycleBinIcon", 2);
             FileListView.History.Add(SystemFolder);
-            NTFSFolder.MainName = "E:";
-            Fat32Folder.MainName = "F:";
+            NTFSFolder.MainName = "Y:";
+            Fat32Folder.MainName = "G:";
             RecycleBin.MainName = "Recycle Bin";
             foreach (var folder in SystemFolder.Children)
             {
+                folder.SetPath(folder.MainName);
                 folderTree.Nodes.Add(folder.GetNode());
                 listView1.Items.Add(folder.GetListViewItem());
-                folder.SetPath(folder.MainName);
                 if(folder == SystemFolder.Children[SystemFolder.Children.Count -1 ])
                 {
                     folder.GetListViewItem().Tag = folder;
+                }
+                if(folder.Children.Count > 0)
+                foreach(var child in folder.Children)
+                {
+                        child.SetPath(folder.GetPath() + "/" + child.MainName);
                 }
             }
 
@@ -84,10 +89,6 @@ namespace DiskDisplay
             listView1.Columns.Add("Size", 100);
             listView1.Columns.Add("Created at", 100);
             listView1.SmallImageList = Image1.ImageList;
-
-            Console.WriteLine("Recycle bin: " + FileSystem.RecycleBin.Count);
-
-
         }
 
         private void ShowFileContent(string content)
