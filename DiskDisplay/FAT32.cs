@@ -48,7 +48,8 @@ class FAT32 : FileSystem
         string filename = @"\\.\" + name;
         using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
         {
-            byte[] bytes = new byte[60];
+            byte[] bytes = new byte[100];
+            filestream.Read(bytes, 0, bytes.Length);
             string type = Encoding.ASCII.GetString(bytes, 0x52, 8);
 
             if (type.Contains("FAT32"))

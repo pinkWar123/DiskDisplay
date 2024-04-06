@@ -42,15 +42,19 @@
             this.toolStripComboBox1 = new System.Windows.Forms.ToolStripComboBox();
             this.recycleBinContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.restoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.partitionMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.addPartitionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStrip1.SuspendLayout();
             this.recycleBinContextMenu.SuspendLayout();
+            this.partitionMenuStrip.SuspendLayout();
             this.SuspendLayout();
+            this.MouseClick += Form1_RightMouseClick;
             // 
             // btnBack
             // 
             this.btnBack.Cursor = System.Windows.Forms.Cursors.Default;
             this.btnBack.Location = new System.Drawing.Point(44, 57);
-            this.btnBack.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnBack.Margin = new System.Windows.Forms.Padding(4);
             this.btnBack.Name = "btnBack";
             this.btnBack.Size = new System.Drawing.Size(100, 28);
             this.btnBack.TabIndex = 0;
@@ -61,7 +65,7 @@
             // btnForward
             // 
             this.btnForward.Location = new System.Drawing.Point(152, 57);
-            this.btnForward.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnForward.Margin = new System.Windows.Forms.Padding(4);
             this.btnForward.Name = "btnForward";
             this.btnForward.Size = new System.Drawing.Size(100, 28);
             this.btnForward.TabIndex = 1;
@@ -72,7 +76,7 @@
             // btnOpen
             // 
             this.btnOpen.Location = new System.Drawing.Point(1769, 63);
-            this.btnOpen.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnOpen.Margin = new System.Windows.Forms.Padding(4);
             this.btnOpen.Name = "btnOpen";
             this.btnOpen.Size = new System.Drawing.Size(100, 28);
             this.btnOpen.TabIndex = 2;
@@ -93,7 +97,7 @@
             // filePathTextBox
             // 
             this.filePathTextBox.Location = new System.Drawing.Point(389, 63);
-            this.filePathTextBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.filePathTextBox.Margin = new System.Windows.Forms.Padding(4);
             this.filePathTextBox.Name = "filePathTextBox";
             this.filePathTextBox.Size = new System.Drawing.Size(953, 22);
             this.filePathTextBox.TabIndex = 5;
@@ -102,7 +106,7 @@
             // folderTree
             // 
             this.folderTree.Location = new System.Drawing.Point(44, 127);
-            this.folderTree.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.folderTree.Margin = new System.Windows.Forms.Padding(4);
             this.folderTree.Name = "folderTree";
             this.folderTree.Size = new System.Drawing.Size(265, 637);
             this.folderTree.TabIndex = 7;
@@ -166,6 +170,20 @@
             this.restoreToolStripMenuItem.Text = "Restore";
             this.restoreToolStripMenuItem.Click += new System.EventHandler(this.restoreToolStripMenuItem_Click);
             // 
+            // partitionMenuStrip
+            // 
+            this.partitionMenuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.partitionMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.addPartitionToolStripMenuItem});
+            this.partitionMenuStrip.Name = "partitionMenuStrip";
+            this.partitionMenuStrip.Size = new System.Drawing.Size(211, 56);
+            // 
+            // addPartitionToolStripMenuItem
+            // 
+            this.addPartitionToolStripMenuItem.Name = "addPartitionToolStripMenuItem";
+            this.addPartitionToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.addPartitionToolStripMenuItem.Text = "Add Partition";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -178,12 +196,13 @@
             this.Controls.Add(this.btnOpen);
             this.Controls.Add(this.btnForward);
             this.Controls.Add(this.btnBack);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "Ahihi";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.contextMenuStrip1.ResumeLayout(false);
             this.recycleBinContextMenu.ResumeLayout(false);
+            this.partitionMenuStrip.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -204,6 +223,8 @@
         private System.Windows.Forms.ToolStripComboBox toolStripComboBox1;
         private System.Windows.Forms.ContextMenuStrip recycleBinContextMenu;
         private System.Windows.Forms.ToolStripMenuItem restoreToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip partitionMenuStrip;
+        private System.Windows.Forms.ToolStripMenuItem addPartitionToolStripMenuItem;
     }
 }
 

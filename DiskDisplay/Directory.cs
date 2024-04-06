@@ -1,3 +1,4 @@
+using DiskDisplay.NewFolder1;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
@@ -67,9 +68,20 @@ class Directory : FileManager
 
     public override void Populate()
     {
-        Console.WriteLine(MainName);
-        CurrentNode.ImageKey = IsFile ? "fileIcon" : "folderIcon";
-        CurrentNode.SelectedImageKey = IsFile ? "fileIcon" : "folderIcon";
+        /*CurrentNode.Nodes.Clear();
+        CurrentItem.SubItems.Clear();*/
+        string imageKey;
+        bool isRecycleBin = this.MainName == "Recycle Bin";
+        if(isRecycleBin)
+        {
+            imageKey = Image1.recycleBinIconKey;
+        }
+        else
+        {
+            imageKey = Image1.folderIconKey;
+        }
+        CurrentNode.ImageKey = imageKey;
+        CurrentNode.SelectedImageKey = imageKey;
         CurrentNode.Tag = this;
         CurrentNode.Text = MainName;
         if (Children != null)
@@ -86,10 +98,10 @@ class Directory : FileManager
         }
         CurrentItem.Text = MainName;
         CurrentItem.Tag = this;
-        CurrentItem.SubItems.Add(IsFile ? "fileIcon" : "folderIcon");
-        CurrentItem.ImageIndex = 0;
+        CurrentItem.SubItems.Add("folder");
+        CurrentItem.ImageIndex = isRecycleBin ? 2 : 0;
         CurrentItem.SubItems.Add(GetSize().ToString());
-        CurrentItem.SubItems.Add(Creationdatetime.ToString());
+        CurrentItem.SubItems.Add(Creationdatetime.ToString() == "1/1/0001 12:00:00 AM" ? "" : Creationdatetime.ToString());
 
     }
 }

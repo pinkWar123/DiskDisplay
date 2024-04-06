@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 class File : FileManager
@@ -40,8 +38,7 @@ class File : FileManager
         CurrentItem.Text = MainName;
         CurrentItem.SubItems.Add("File");
         CurrentItem.SubItems.Add(GetSize().ToString());
-        CurrentItem.SubItems.Add(Creationdatetime.ToString());
-
+        CurrentItem.SubItems.Add(Creationdatetime.ToString() == "1/1/2001 12:00:00 AM" ? "" : Creationdatetime.ToString());
     }
 
     public override bool FindFather(FileManager temp)

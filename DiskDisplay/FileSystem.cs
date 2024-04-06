@@ -11,7 +11,7 @@ class FileSystem
     public string DiskName;
     public string DriveName;
     public bool IsFAT32Type;
-    public static List<FileManager> RecycleBin = new List<FileManager>();
+    public List<FileManager> RecycleBin = new List<FileManager>();
     public FileSystem() { }
     public FileSystem(string name)
     {

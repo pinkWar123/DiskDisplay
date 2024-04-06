@@ -13,7 +13,9 @@ namespace DiskDisplay.NewFolder1
     internal class Image1
     {
         public static ImageList ImageList = new ImageList();
-        
+        public static readonly string fileIconKey = "fileIcon";
+        public static readonly string folderIconKey = "folderIcon";
+        public static readonly string recycleBinIconKey = "recycleBinIcon";
 
         public static void LoadImageList()
         {
@@ -24,9 +26,9 @@ namespace DiskDisplay.NewFolder1
             System.IO.Directory.SetCurrentDirectory(imageDirectory);
 
             // Load the image using the relative path
-            ImageList.Images.Add("folderIcon", Image.FromFile("folder.png"));
-            ImageList.Images.Add("fileIcon", Image.FromFile("file.jpg"));
-            ImageList.Images.Add("recycleBinIcon", Image.FromFile("recycle-bin.jpg"));
+            ImageList.Images.Add(folderIconKey, Image.FromFile("folder.png"));
+            ImageList.Images.Add(fileIconKey, Image.FromFile("file.jpg"));
+            ImageList.Images.Add(recycleBinIconKey, Image.FromFile("recycle-bin.jpg"));
         }
     }
 }
