@@ -356,6 +356,7 @@ class NTFS : FileSystem
         fileStream.Read(MFTBytes, 0, MFTBytes.Length);
         int NumberMFT = GetNumberOfMFTRecord(MFTBytes, ref fileStream);
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024 , SeekOrigin.Begin);
+        Console.WriteLine("COI O DAY NE DM MMMM : " + NumberMFT);
         int count = 0x23;
 
         //FileManager temp = new FileManager();
