@@ -350,6 +350,8 @@ namespace DiskDisplay
                 SystemFiles.SystemFolder.Children[0].Children.Add(item);
                 MessageBox.Show("Delete file successfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+            else
+                MessageBox.Show("Delete file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
@@ -407,6 +409,7 @@ namespace DiskDisplay
                 listView1.Items.Remove(item.GetListViewItem());
                 MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+            MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
