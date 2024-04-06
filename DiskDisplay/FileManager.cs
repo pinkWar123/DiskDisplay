@@ -20,6 +20,7 @@ class FileManager
     public UInt32 RootID;
     public DateTime modifieddate;
     public UInt32 NumberOfContigousClusterOfContent;
+    public List<Tuple<UInt32, UInt32>> ListDataruin;
     public string content_President;
     public bool IsNon_Resident;
 
@@ -116,7 +117,7 @@ class FileManager
     }
 
     virtual public void CloneData(string filename, UInt32 FileSize, UInt32 ID, UInt32 RootID, DateTime CreationDate,
-        DateTime ModifiedDate, UInt32 StartingCluster, UInt32 ContigousCluster, byte Isnon_Resident, string content)
+        DateTime ModifiedDate,List<Tuple<UInt32, UInt32>> dataruin, byte Isnon_Resident, string content)
     {
         this.MainName = filename;
         this.FileSize = FileSize;
@@ -124,8 +125,9 @@ class FileManager
         this.RootID = RootID;
         this.Creationdatetime = CreationDate;
         this.modifieddate = ModifiedDate;
-        this.StartCluster = (UInt16)StartingCluster;
-        this.NumberOfContigousClusterOfContent = ContigousCluster;
+        if(dataruin.Count > 0)
+            this.StartCluster = (UInt16)dataruin[0].Item2;
+        this.ListDataruin = dataruin;
         this.content_President = content;
         this.IsNon_Resident = (Isnon_Resident == 0x01) ? true : false;
 

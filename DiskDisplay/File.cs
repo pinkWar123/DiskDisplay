@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -17,9 +18,9 @@ class File : FileManager
         IsFile = true;
     }
 
-    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate, UInt32 StartingCluster, UInt32 ContigousCluster, byte Isnon_Resident, string content)
+    public override void CloneData(string filename, uint FileSize, uint ID, uint RootID, DateTime CreationDate, DateTime ModifiedDate, List<Tuple<UInt32, UInt32>> dataruin, byte Isnon_Resident, string content)
     {
-        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate, StartingCluster, ContigousCluster, Isnon_Resident, content);
+        base.CloneData(filename, FileSize, ID, RootID, CreationDate, ModifiedDate, dataruin, Isnon_Resident, content);
         IsFile = true;
     }
     public override void PrintImfomations(int level)

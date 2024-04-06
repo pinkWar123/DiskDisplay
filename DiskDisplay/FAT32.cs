@@ -40,16 +40,25 @@ class FAT32 : FileSystem
         this.FirstSector = firstSector;
         this.DiskName = Diskname;
     }
+   
     ~FAT32() { }
 
+    static public bool IsFat32(string name)
+    {
+        string filename = @"\\.\" + name;
+        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
+        {
+            byte[] bytes = new byte[60];
+            string type = Encoding.ASCII.GetString(bytes, 0x52, 8);
+
+            if (type.Contains("FAT32"))
+                return true;
+        }
+        return false;
+    }
     public override List<FileManager> ReadFileSystem()
     {
         string filename = @"\\.\" + DriveName;
-        using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
-        {
-            filestream.Seek(0, SeekOrigin.Begin);
-
-        }
         using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.Read))
         {
             ReadBoostSector(filestream);
