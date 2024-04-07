@@ -159,7 +159,9 @@ class NTFS : FileSystem
             if(DeletedIdInfo.ContainsKey(file.ID))
             {
                 UInt32 rootFolderID = DeletedIdInfo[file.ID];
+
                 var isRestoreSucceful = ChangeRootID(file, rootFolderID);
+                Console.WriteLine("Root folder: " + rootFolderID);
                 if(isRestoreSucceful)
                 {
                     DeletedIdInfo.Remove(file.ID);
@@ -197,7 +199,7 @@ class NTFS : FileSystem
 
                         if (status == 0x00 || status == 0x02)
                             return false;
-
+                        Console.WriteLine("Chay vao day");
                         //entry[0x16] = 0x01;
                         // Read Attribute-------------------------------
                         while (AttributeOffset <= 1024)
@@ -210,12 +212,10 @@ class NTFS : FileSystem
                             if (AttributeType == 0x30)
                             {
                                 byte[] rootIdBytes = BitConverter.GetBytes(parentId);
-
                                 entry[AttributeOffset + ContentOffset + 0x06] = 0x05;
                                 Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
                                 filestream.Seek(-entry.Length, SeekOrigin.Current);
 
-                                // Write the modified entry back to the file
                                 filestream.Write(entry, 0, entry.Length);
                             }
 
@@ -352,7 +352,7 @@ class NTFS : FileSystem
                                     Console.WriteLine("Recycler ID: " + MFTEntry.RecyclerId);
                                     Array.Copy(rootIdBytes, 0, entry, AttributeOffset + ContentOffset, Math.Min(6, rootIdBytes.Length));
 
-                                    entry[0x16] = 0x00;
+                                    //entry[0x16] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 0] = 0x01;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 1] = 0x00;
                                     entry[AttributeOffset + ContentOffset + 0x38 + 2] = 0x00;
@@ -362,6 +362,7 @@ class NTFS : FileSystem
                                     {
                                         DeletedIdInfo.Add(file.ID, file.RootID);
                                     }
+                                    Console.WriteLine(file.RootID);
                                     /*
                                     Random random = new Random();
                                     string randomChars = new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6)
@@ -584,9 +585,9 @@ static class MFTEntry
             }
             AttributeOffset += (UInt16)AttributeSize;
         }
-        
 
-        if(CheckBitAt(FileFlag, 5) == 1)
+
+        /*if(CheckBitAt(FileFlag, 5) == 1)
         {
             File result = new File();
             result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident, content);
@@ -599,7 +600,19 @@ static class MFTEntry
             return result;
         }
 
-        return null;
+        return null;*/
+        if (status == 0x01)
+        {
+            File result = new File();
+            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident, content);
+            return result;
+        }
+        else
+        {
+            Directory result = new Directory();
+            result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, dataRuin, IsNon_Resident, content);
+            return result;
+        }
     }
 
 
