@@ -409,7 +409,7 @@ namespace DiskDisplay
                 listView1.Items.Remove(item.GetListViewItem());
                 MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

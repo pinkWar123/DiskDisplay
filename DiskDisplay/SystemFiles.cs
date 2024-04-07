@@ -44,6 +44,7 @@ namespace DiskDisplay
             Directory dir = new Directory();
             dir.MainName = name;
             dir.Children = fileManager;
+            dir.IsFAT32 = (fileSystem is FAT32);
             dir.SetItemText(name);
             dir.SetNodeText(name);
             //dir.SetIcon()
