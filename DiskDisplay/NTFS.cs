@@ -5,6 +5,7 @@ using System.Configuration;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
@@ -252,16 +253,115 @@ class NTFS : FileSystem
             BytePerEntry = (UInt32)VBRBytes[0x40] * BytePerSector * SectorPerCluster;
         }
     }
-   
+    private int GetNumberOfMFTRecord(byte[] data, ref FileStream filestream)
+    {
+        UInt32 AttriButeOffset = BitConverter.ToUInt16(data, 0x14);
+        List<Tuple<UInt32, UInt32>> dataRuin = new List<Tuple<UInt32, UInt32>>();
+
+        while(AttriButeOffset <= 1024)
+        {
+            UInt32 AttributeType = BitConverter.ToUInt32(data, (int)AttriButeOffset);
+            if (AttributeType == 0xFFFFFFFF) // End Attribute
+                break;
+            UInt32 AttributeSize = BitConverter.ToUInt32(data, (int)AttriButeOffset + 0x04);
+            if(AttributeType != 0xB0) // to find bitmap of $MFT
+            {
+                AttriButeOffset += AttributeSize;
+                continue;
+            }
+
+            byte IsNonResidentByte = data[AttriButeOffset + 0x08];
+            UInt16 ContentOffset = BitConverter.ToUInt16(data, (int)AttriButeOffset + 0x14);
+            UInt32 SizeOfContent = 0;
+
+            if (IsNonResidentByte == 0x00)
+            {
+                SizeOfContent = BitConverter.ToUInt32(data, (int)AttriButeOffset + 0x10);
+            }
+            else if (IsNonResidentByte == 0x01)
+            {
+                SizeOfContent = BitConverter.ToUInt32(data, (int)AttriButeOffset + 0x30);
+                ContentOffset = BitConverter.ToUInt16(data, (int)AttriButeOffset + 0x20);
+            }
+
+            int index = 0;
+            while (true)
+            {
+                byte firstdatarun = data[AttriButeOffset + ContentOffset + index];
+                if (firstdatarun == 0x00)
+                    break;
+                byte firstFourBytes = (byte)(firstdatarun >> 4);
+                byte lastFourBytes = (byte)(firstdatarun & 0b00001111);
+
+                Int32 StartingClusterOfContent = (Int32)MFTEntry.GetNumberWithKByte(data, (uint)(AttriButeOffset + ContentOffset + lastFourBytes + index + 1), firstFourBytes);
+                Int32 NumberOfContigousCluster = (Int32)MFTEntry.GetNumberWithKByte(data, (uint)(AttriButeOffset + ContentOffset + index + 1), lastFourBytes);
+                if (index != 0 || dataRuin.Count != 0)
+                {
+                    StartingClusterOfContent = (Int32)dataRuin[dataRuin.Count - 1].Item2 + StartingClusterOfContent;
+                }
+                Tuple<UInt32, UInt32> t = Tuple.Create((UInt32)NumberOfContigousCluster, (UInt32)StartingClusterOfContent);
+
+                dataRuin.Add(t);
+
+                index += (firstFourBytes + lastFourBytes + 1);
+            }
+            break;
+        }
+        
+        //find the last bit 1 in bitmap
+        int result = 0;
+        for(int i = 0; i < dataRuin.Count; i++)
+        {
+            byte[] bitmap = new byte[SectorPerCluster * BytePerSector];
+            bool hasdone = false;
+            for(int k = 0; k < dataRuin[i].Item1; k++)
+            {
+                filestream.Seek(OffsetWithCluster(dataRuin[i].Item2 + (uint)k), SeekOrigin.Begin);
+                filestream.Read(bitmap, 0, bitmap.Length);
+                for(int j = bitmap.Length - 1; j >= 0; j--)
+                {
+                    if (bitmap[j] == 0)
+                        continue;
+                    if(j == bitmap.Length - 1)
+                    {
+                        result += bitmap.Length * 8;
+                        break;
+                    }
+                    for(int z = 0; z < 8; z++)
+                    {
+                        if ((bitmap[j] & (1 << z)) != 0)
+                        {
+                            result += j * 8 + 1 + 7 - z;
+                            break;
+                        }
+                    }
+                    hasdone = true;
+                    break;
+                }
+            }
+            if (hasdone)
+                break;
+            result += bitmap.Length;
+        }
+
+        if (result > 35)
+            return result;
+        return 200;
+    }
     public void ReadMFT(FileStream fileStream, ref List<FileManager> files)
     {
         byte[] MFTBytes = new byte[BytePerEntry];
 
+        fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT), SeekOrigin.Begin);
+        fileStream.Read(MFTBytes, 0, MFTBytes.Length);
+        int NumberMFT = GetNumberOfMFTRecord(MFTBytes, ref fileStream);
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024 , SeekOrigin.Begin);
-        int count = 0;
+        Console.WriteLine("COI O DAY NE DM MMMM : " + NumberMFT);
+        int count = 0x23;
+
         //FileManager temp = new FileManager();
         List<FileManager > OrphanedFile = new List<FileManager>();
-        while(count++ < 200)
+        while(count++ <= NumberMFT)
         {
             fileStream.Read(MFTBytes, 0, MFTBytes.Length);
 
@@ -436,7 +536,7 @@ static class MFTEntry
             return 1;
         return 0;
     }
-    static private Int64 GetNumberWithKByte(byte[] entry, UInt32 Offset, int k)
+    static public Int64 GetNumberWithKByte(byte[] entry, UInt32 Offset, int k)
     {
         byte[] temp = new byte[8];
 

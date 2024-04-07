@@ -98,10 +98,12 @@ class Directory : FileManager
         }
         CurrentItem.Text = MainName;
         CurrentItem.Tag = this;
-        CurrentItem.SubItems.Add("folder");
+        CurrentItem.SubItems.Add(isRecycleBin ? "Recycle Bin" : 
+                                ((Creationdatetime != DateTime.MinValue) ? "folder" : 
+                                ((IsFAT32 ? "FAT32" : "NTFS"))));
         CurrentItem.ImageIndex = isRecycleBin ? 2 : 0;
         CurrentItem.SubItems.Add(GetSize().ToString());
-        CurrentItem.SubItems.Add(Creationdatetime.ToString() == "1/1/0001 12:00:00 AM" ? "" : Creationdatetime.ToString());
+        CurrentItem.SubItems.Add(Creationdatetime == DateTime.MinValue ? "" : Creationdatetime.ToString());
 
     }
 }
