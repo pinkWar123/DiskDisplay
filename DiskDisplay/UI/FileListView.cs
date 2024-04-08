@@ -23,6 +23,7 @@ namespace DiskDisplay
             Console.WriteLine("History length: " + FileListView.History.Count);
             if (History[CurrentHistoryIndex].Children != null)
             {
+                
                 textBox.Text = History[CurrentHistoryIndex].GetPath();
                 foreach (var child in History[CurrentHistoryIndex].Children)
                 {

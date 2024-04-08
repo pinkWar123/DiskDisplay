@@ -621,24 +621,7 @@ static class MFTEntry
                     }
                     return null;
                 }
-                /*if (RecyclerId != 0 && RootID == RecyclerId)
-                {
-                    if (status == 0x01) // File
-                    {
-                        File result = new File();
-                        result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
-                        if(updateRecycleBin) FileSystem.RecycleBin.Add(result);
-                        result.SetRecycleBin(true);
-                    }
-                    else
-                    {
-                        Directory result = new Directory();
-                        result.CloneData(filename, FileSize, EntryID, (UInt32)RootID, Creationtime, Modifiedtime, StartingClusterOfContent, NumberOfContigousCluster, IsNon_Resident, content);
-                        if (updateRecycleBin) FileSystem.RecycleBin.Add(result);
-                        result.SetRecycleBin(true);
-                    }
-
-                }*/
+                
 
                 if (RecycleBinId != 0 && RootID == RecycleBinId)
                 {

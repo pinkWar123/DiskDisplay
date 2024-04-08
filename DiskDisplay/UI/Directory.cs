@@ -90,8 +90,10 @@ class Directory : FileManager
             {
                 TreeNode node = new TreeNode();
                 child.SetNode(node);
+                var path = this.GetPath() + "/" + child.MainName;
+                if (path[0] == '/') path.Remove(0, 1);
+                child.SetPath(path);
                 child.Populate();
-                child.SetPath(this.Path + "/" + child.MainName);
                 child.SetParent(this);
                 CurrentNode.Nodes.Add(node);
             }

@@ -47,7 +47,7 @@ namespace DiskDisplay
             dir.IsFAT32 = (fileSystem is FAT32);
             dir.SetItemText(name);
             dir.SetNodeText(name);
-            //dir.SetIcon()
+            dir.SetPath(dir.MainName);
             SystemFolder.Children.Add(dir);
             SystemFolder.Populate();
             UpdateRecycleBin(ref fileSystem.RecycleBin);
@@ -57,6 +57,8 @@ namespace DiskDisplay
         {
             listView1.Items.Clear();
             folderTree.Nodes.Clear();
+
+            SystemFolder.Populate();
             foreach (var folder in SystemFolder.Children)
             {
                 folder.SetPath(folder.MainName);
@@ -69,7 +71,9 @@ namespace DiskDisplay
                 if (folder.Children.Count > 0)
                     foreach (var child in folder.Children)
                     {
-                        child.SetPath(folder.GetPath() + "/" + child.MainName);
+                        var path = folder.GetPath() + "/" + child.MainName;
+                        if (path[0] == '/') path.Remove(0, 1);
+                        child.SetPath(path);
                     }
             }
         }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace DiskDisplay
@@ -19,21 +15,6 @@ namespace DiskDisplay
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
 
-            /*FileSystem fat = new FAT32("F:");
-            List<FileManager> files = new List<FileManager>();
-            files = fat.ReadFileSystem();
-
-
-            for (int i = 0; i < files.Count; i++)
-            {
-                files[i].PrintImfomations(0);
-            }
-            for (int i = 0; i < FileSystem.RecycleBin.Count; i++)
-            {
-                FileSystem.RecycleBin[i].PrintImfomations(0);
-            }*/
-
-            //fat.DeleteFile(files[2]);
         }
     }
 }
