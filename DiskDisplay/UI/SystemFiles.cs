@@ -58,7 +58,6 @@ namespace DiskDisplay
             listView1.Items.Clear();
             folderTree.Nodes.Clear();
 
-            SystemFolder.Populate();
             foreach (var folder in SystemFolder.Children)
             {
                 folder.SetPath(folder.MainName);
