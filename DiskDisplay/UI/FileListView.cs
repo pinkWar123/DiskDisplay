@@ -21,11 +21,11 @@ namespace DiskDisplay
             listView.Items.Clear();
             if (History[CurrentHistoryIndex].Children != null)
             {
-                
-                textBox.Text = History[CurrentHistoryIndex].GetPath();
-                foreach (var child in History[CurrentHistoryIndex].Children)
+                var file = History[CurrentHistoryIndex];
+                textBox.Text = file.GetPath();
+                foreach (var child in file.Children)
                 {
-                    if (isRecycleBin || child.GetVisible())
+                    if ((file.MainName == "Recycle Bin") || child.GetVisible())
                     {
                         listView.Items.Add(child.GetListViewItem());
                     }
