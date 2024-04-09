@@ -31,11 +31,22 @@ class FileManager
     // Properties for UI
     protected TreeNode CurrentNode = new TreeNode();
     protected ListViewItem CurrentItem = new ListViewItem();
+    protected int TreeViewIndex = 0;
     protected bool isRecycleBin = false;
     protected bool isVisible = true;
     protected string Path = "";
     public FileManager() {
         
+    }
+
+    public void SetTreeViewIndex(int index)
+    {
+        TreeViewIndex = index;
+    }
+
+    public int GetTreeViewIndex()
+    {
+        return TreeViewIndex;
     }
 
     public void SetVisible(bool visible)
@@ -171,6 +182,8 @@ class FileManager
     //Virtual Methods for UI
     public virtual void Populate() { }
     public virtual void PopulateListView(ref ListView ListView) { }
+
+    public virtual void PopulateTreeView(ref TreeView treeView) { }
     public void SetNode(TreeNode node)
     {
         CurrentNode = node;

@@ -2,6 +2,7 @@ using DiskDisplay.NewFolder1;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 
 class Directory : FileManager
@@ -86,16 +87,18 @@ class Directory : FileManager
         CurrentNode.Text = MainName;
         if (Children != null)
         {
-            foreach (var child in Children)
+            for(var i = 0; i < Children.Count; i++)
             {
+                var child = Children[i];
                 TreeNode node = new TreeNode();
                 child.SetNode(node);
+                child.SetTreeViewIndex(i);
                 var path = this.GetPath() + "/" + child.MainName;
                 if (path[0] == '/') path.Remove(0, 1);
                 child.SetPath(path);
                 child.Populate();
                 child.SetParent(this);
-                CurrentNode.Nodes.Add(node);
+                if (child.GetVisible()) CurrentNode.Nodes.Add(node);
             }
         }
         CurrentItem.Text = MainName;
@@ -108,5 +111,6 @@ class Directory : FileManager
         CurrentItem.SubItems.Add(Creationdatetime == DateTime.MinValue ? "" : Creationdatetime.ToString());
 
     }
+    
 }
 

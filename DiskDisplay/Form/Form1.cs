@@ -17,8 +17,6 @@ namespace DiskDisplay
             Image1.LoadImageList();
             folderTree.ImageList = Image1.ImageList;
             SystemFiles.InitializeSystemFiles();
-
-
         }
 
 
@@ -80,7 +78,7 @@ namespace DiskDisplay
             {
                 IsUserInteraction = true;
                 FileListView.CurrentHistoryIndex--;
-                FileListView.RenderListView(ref listView1, filePathTextBox);
+                FileListView.RenderListView(ref listView1, ref folderTree,filePathTextBox);
                 IsUserInteraction = false;
 
             }
@@ -92,7 +90,7 @@ namespace DiskDisplay
             {
                 IsUserInteraction = true;
                 FileListView.CurrentHistoryIndex++;
-                FileListView.RenderListView(ref listView1, filePathTextBox);
+                FileListView.RenderListView(ref listView1, ref folderTree, filePathTextBox);
                 IsUserInteraction = false;
 
             }
@@ -135,7 +133,7 @@ namespace DiskDisplay
                 if (selecteditem.Tag is File)
                 {
                     var selectedFile = selecteditem.Tag as File;
-
+                    if (selectedFile.IsRecycleBin()) return;
                     FileWindow f2 = new FileWindow();
                     string content = "";
                     content = FileManagerDictionary.FileDictionary[selectedFile].ReadData(selectedFile);
@@ -146,6 +144,8 @@ namespace DiskDisplay
                     if (IsUserInteraction) return;
                     IsUserInteraction = true;
                     var selectedFolder = selecteditem.Tag as Directory;
+                    if (selectedFolder.IsRecycleBin()) return;
+
                     bool isRecycleBinFolder = selectedFolder.MainName == "Recycle Bin";
                     if(selectedFolder.GetListViewItem().Text == "Recycle Bin" && FileListView.CurrentHistoryIndex == 0)
                     {
@@ -172,7 +172,7 @@ namespace DiskDisplay
                             ++FileListView.CurrentHistoryIndex;
                         }
                     }
-                    FileListView.RenderListView(ref listView1, filePathTextBox, isRecycleBinFolder);
+                    FileListView.RenderListView(ref listView1, ref folderTree, filePathTextBox, isRecycleBinFolder);
                     IsUserInteraction = false;
 
                 }
@@ -226,7 +226,7 @@ namespace DiskDisplay
                             ++FileListView.CurrentHistoryIndex;
                         }
                     }
-                    FileListView.RenderListView(ref listView1, filePathTextBox, isRecycleBinFolder);
+                    FileListView.RenderListView(ref listView1, ref folderTree, filePathTextBox, isRecycleBinFolder);
                     IsUserInteraction = false;
 
                 }
@@ -250,6 +250,7 @@ namespace DiskDisplay
             if (fileSystem.DeleteFile(item))
             {
                 listView1.Items.Remove(item.GetListViewItem());
+                folderTree.Nodes.Remove(item.GetNode());
                 item.SetRecycleBin(true);
                 item.SetVisible(false);
                 fileSystem.RecycleBin.Add(item);
@@ -279,6 +280,7 @@ namespace DiskDisplay
                 item.SetRecycleBin(false);
                 item.SetVisible(true);
                 listView1.Items.Remove(item.GetListViewItem());
+                item.GetParent().GetNode().Nodes.Insert(item.GetTreeViewIndex(), item.GetNode());
                 MessageBox.Show("Restore file succesfully", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else MessageBox.Show("Restore file failed", "File Content", MessageBoxButtons.OK, MessageBoxIcon.Information);
