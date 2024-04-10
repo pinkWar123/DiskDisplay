@@ -20,6 +20,8 @@ class NTFS : FileSystem
     public UInt64 StartingClusterOfMFT;
     public UInt64 StartingClusterOfBackupMFT;
     public UInt32 BytePerEntry;
+
+    private Int32 NumberOfMFTRecord = 200;
     public Dictionary<UInt32, UInt32> DeletedIdInfo = new Dictionary<UInt32,UInt32>(); // This dictionary contains a map between ID of the deleted file and its RootID
     public NTFS() { }
     public NTFS(string drive) {
@@ -184,8 +186,8 @@ class NTFS : FileSystem
         using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
         {
             filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
-            int count = 0;
-            while (count++ < 200)
+            int count = 0x23;
+            while (count++ < NumberOfMFTRecord)
             {
                 byte[] entry = new byte[BytePerEntry];
                 filestream.Read(entry, 0, entry.Length);
@@ -354,14 +356,13 @@ class NTFS : FileSystem
 
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT), SeekOrigin.Begin);
         fileStream.Read(MFTBytes, 0, MFTBytes.Length);
-        int NumberMFT = GetNumberOfMFTRecord(MFTBytes, ref fileStream);
+        NumberOfMFTRecord = GetNumberOfMFTRecord(MFTBytes, ref fileStream);
         fileStream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024 , SeekOrigin.Begin);
-        Console.WriteLine("COI O DAY NE DM MMMM : " + NumberMFT);
         int count = 0x23;
 
         //FileManager temp = new FileManager();
         List<FileManager > OrphanedFile = new List<FileManager>();
-        while(count++ <= NumberMFT)
+        while(count++ <= NumberOfMFTRecord)
         {
             fileStream.Read(MFTBytes, 0, MFTBytes.Length);
 
@@ -422,8 +423,8 @@ class NTFS : FileSystem
             using (FileStream filestream = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite))
             {
                 filestream.Seek(OffsetWithCluster(StartingClusterOfMFT) + 0x23 * 1024, SeekOrigin.Begin);
-                int count = 0;
-                while (count++ < 200)
+                int count = 0x23;
+                while (count++ < NumberOfMFTRecord)
                 {
                     byte[] entry = new byte[BytePerEntry];
                     filestream.Read(entry, 0, entry.Length);
